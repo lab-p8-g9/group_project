@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Email</title>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+    <body>
+        <h1>Please Input your Issue below:</h1>
+        <form action="./submit" method="POST">
+            <label for="user_email">Email:</label>
+            <br>
+            <input type="email" id="user_email" name="user_email" required><br><br>
+            <label for="user_complaint">Complaint:</label>
+            <br>
+            <textarea id="user_complaint" name="user_complaint" rows="4" cols="50" required></textarea><br><br>
+            <button type="submit">Submit</button>
+        </form>
+    </body>
+</html>
