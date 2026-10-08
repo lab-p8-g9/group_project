@@ -1,22 +1,19 @@
+import os
+import sys
+from dotenv import load_dotenv
 from typing import Literal
 from pydantic import BaseModel, Field
 from openai import OpenAI
+#from io_manager import IOmanager
+
+load_dotenv()
+
+openrouter_key = os.getenv("OPENROUTER_API_KEY")
 
 client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
-  api_key="insert own api key",
+  base_url = "https://openrouter.ai/api/v1",
+  api_key = "openrouter_key",
 )
-
-CATEGORY_SCORES = {
-    "Security and Fraud": {"score": 8, "base_level": "Critical"},
-    "Billing and Payment": {"score": 7, "base_level": "High"},
-    "Technical Support": {"score": 6, "base_level": "High"},
-    "Refund": {"score": 5, "base_level": "High"},
-    "Product/Service Quality": {"score": 4, "base_level": "Medium"},
-    "Delivery & Shipping": {"score": 3, "base_level": "Medium"},
-    "Account": {"score": 2, "base_level": "Low"},
-    "General Inquiry": {"score": 1, "base_level": "Low"},
-}
 
 CategoryType = Literal[
     "Security and Fraud",
@@ -29,75 +26,54 @@ CategoryType = Literal[
     "General Inquiry"
 ]
 
+Team_Assignment = {
+    "Security and Fraud": "Tech",
+    "Billing and Payment": "Tech",
+    "Technical Support": "Tech",
+    "Refund": "Admin",
+    "Product/Service Quality": "Admin",
+    "Delivery & Shipping": "Admin",
+    "Account": "Admin",
+    "General Inquiry": "Admin",
+}
+
 class LLMAssessment(BaseModel):
+    is_spam: bool = Field(
+        description="Set to True if the email is spam or scam"
+    )
     category: CategoryType = Field(
-        description="Matched category from the allowed complaint priority list"
+        description="Department routing category tag. Set to 'Spam' if is_spam is True."
     )
-    sentiment: Literal["Positive", "Neutral", "Negative"] = Field(
-        description="Sentiment detected in the email tone"
+    priority_score: int = Field(
+        ge=0, le=8,
+        description="Priority rating (1 to 8). Set to 0 if the email is spam."
     )
-    urgency: Literal["Low", "Medium", "High", "Critical"] = Field(
-        description="Inferred operational or temporal urgency"
-    )
-    reasoning: str = Field(
-        description="Brief justification for category, sentiment, and urgency assignment"
-    )
+    summary: str = Field(description="1-sentence summary of the email.")
+    reasoning: str = Field(description="Explanation of the assessment and priority score.")
 
 
 class FinalComplaintAnalysis(BaseModel):
     category: str
-    sentiment: str
-    urgency: str
-    waiting_time_days: int
-    initial_priority_score: int
-    aging_adjustment: int
-    final_priority_score: int
-    priority_level: str
-    recommended_action: str
+    priority_score: int
+    assigned_to: Literal["Tech", "Admin"]
+    summary: str
     reasoning: str
 
 
-def calculate_initial_score(category: str, sentiment: str, urgency: str) -> int:
-    """Calculates Initial Priority Score (0-100 scale) using Category weight, Sentiment, and Urgency."""
-    cat_weight = CATEGORY_SCORES.get(category, {}).get("score", 1) * 5  # Max 40 points
-    
-    urgency_weights = {"Low": 10, "Medium": 20, "High": 35, "Critical": 45} # Max 45 points
-    sentiment_weights = {"Positive": 0, "Neutral": 5, "Negative": 15}       # Max 15 points
-    
-    score = cat_weight + urgency_weights.get(urgency, 10) + sentiment_weights.get(sentiment, 5)
-    return min(100, score)
-
-
-def map_final_level(score: int) -> tuple[str, str]:
-    """Maps Final Score to Priority Level and Recommended Action."""
-    if score >= 80:
-        return "Critical", "Escalate immediately to senior lead / supervisor"
-    elif score >= 65:
-        return "High", "Escalate to tier-2 support team"
-    elif score >= 40:
-        return "Medium", "Standard queue processing"
-    else:
-        return "Low", "Automated / standard response queue"
-
-
-def analyse_complaint(subject: str, body: str, waiting_time_days: int = 0) -> FinalComplaintAnalysis:
-    """Combines LLM feature extraction with deterministic scoring rules."""
-    
-    prompt = f"""
-    Analyse this customer email and extract category, sentiment, and urgency:
-    
-    SUBJECT: {subject}
-    BODY: {body}
-    """
+def analyse_complaint(subject: str, body: str) -> FinalComplaintAnalysis:
+    prompt = f"SUBJECT: {subject}\nBODY: {body}"
 
     completion = client.beta.chat.completions.parse(
-        model="nvidia/nemotron-3-ultra-550b-a55b:free",      #Can change llm model here
+        model="nvidia/nemotron-3-ultra-550b-a55b:free",   #Can change llm model here eg. openrouter/free
         messages=[
             {
                 "role": "system",
                 "content": (
-                    "You are a customer service triage agent. Classify complaints accurately "
-                    "into standard categories and evaluate sentiment and urgency."
+                    "You are an AI Email Filter and Complaint Manager. "
+                    "First, evaluate if the email is spam, unsolicited marketing, phishing, or an automated system message. "
+                    "If it is valid customer communication, assign a priority score strictly as a whole number from 1 to 8 "
+                    "based on situational severity, financial impact, legal risk, and immediate urgency. "
+                    "Categorize the issue strictly into one of the allowed complaint categories."
                 ),
             },
             {"role": "user", "content": prompt},
@@ -105,51 +81,34 @@ def analyse_complaint(subject: str, body: str, waiting_time_days: int = 0) -> Fi
         response_format=LLMAssessment,
     )
 
-    llm_out = completion.choices[0].message.parsed
+    llm_res = completion.choices[0].message.parsed
 
-    # Calculate initial score and aging adjustment
-    initial_score = calculate_initial_score(llm_out.category, llm_out.sentiment, llm_out.urgency)
-    
-    # Aging adjustment: +3.75 points per waiting day (wait time heightened to max after 1 week (8 days), score capped at 30)
-    aging_adjustment = min(30, int(waiting_time_days * 3.75))
-    
-    final_score = min(100, initial_score + aging_adjustment)
-    priority_level, action = map_final_level(final_score)
+    #if llm_res is None:
+       # raw_content = completion.choices[0].message.content
+       # raise ValueError(f"Model failed to return structured JSON. Raw output was: {raw_content}")
+
+   # if llm_res.is_spam:
+       # print(f"[IGNORED - SPAM DETECTED] Subject: '{subject}' | Reason: {llm_res.reasoning}")
+        # return None
+
+    assigned_to = Team_Assignment.get(llm_res.category, "Admin")
 
     return FinalComplaintAnalysis(
-        category=llm_out.category,
-        sentiment=llm_out.sentiment,
-        urgency=llm_out.urgency,
-        waiting_time_days=waiting_time_days,
-        initial_priority_score=initial_score,
-        aging_adjustment=aging_adjustment,
-        final_priority_score=final_score,
-        priority_level=priority_level,
-        recommended_action=action,
-        reasoning=llm_out.reasoning,
+        category=llm_res.category,
+        priority_score=llm_res.priority_score,
+        assigned_to=assigned_to,
+        summary=llm_res.summary,
+        reasoning=llm_res.reasoning,
     )
 
 
 #Test working example
 if __name__ == "__main__":
-    email_subject = "Poor attitude of staff at Flagship Outlet"
-    email_body = (
-        "The staff, xxx, was very unhelpful in answering my questions and was very condesending."
-        "Manager was also not in post at that time when I wanted to complain about the staff"
-    )
-    
-    result = analyse_complaint(
-        subject=email_subject, 
-        body=email_body, 
-        waiting_time_days=1             #can be changed accordingly
-    )
+    email_subject = "System crash during checkout payment process"
+    email_body = "Your payment gateway threw a 500 server error and charged my credit card twice!"
 
-    print("\n--- AI Analysis Result ---")
-    print(f"Category:               {result.category}")
-    print(f"Sentimental:            {result.sentiment}")
-    print(f"Urgency:                {result.urgency}")
-    print(f"Waiting time:           {result.waiting_time_days} days")
-    print(f"Initial Priority score: {result.initial_priority_score} (based on category, sentimental and Urgency)")
-    print(f"Aging Adjustment:       {result.aging_adjustment} (based on waiting time)")
-    print(f"Final Priority score:   {result.final_priority_score} — {result.priority_level}")
-    print(f"Recommended action:     {result.recommended_action}")
+    # Call function directly without instantiating a class object
+    decision = analyse_complaint(subject=email_subject, body=email_body)
+    
+    if decision:
+        print(f"Category: {decision.category} | Priority: {decision.priority_score} | Assigned To: {decision.assigned_to}")
