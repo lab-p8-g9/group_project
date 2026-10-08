@@ -38,5 +38,21 @@ c.execute('''CREATE TABLE IF NOT EXISTS Tech_Professionals(
             Deadline TEXT,
             FOREIGN KEY(ComplaintID) REFERENCES Emails(ComplaintID));''')
 
+def add(table_name, list_of_data):
+    if table_name == 'Accounts': #3 data
+        c.execute('''INSERT INTO(?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2]))
+
+    elif table_name == 'Emails': #6 data
+        c.execute('''INSERT INTO(?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4], list_of_data[5]))
+
+    elif table_name == 'AI_Complaint_Analysis': #4 data
+        c.execute('''INSERT INTO(?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
+
+    elif table_name == 'Admin Team': #3 data
+        c.execute('''INSERT INTO(?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2]))
+
+    elif table_name == 'Tech Professionals': #3 data
+        c.execute('''INSERT INTO(?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2]))
+
 db.commit()
 db.close()
