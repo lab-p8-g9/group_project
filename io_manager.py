@@ -1,9 +1,8 @@
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
-from ai_manager import analyse_complaint        # put ur function  name here
-
+from ai_manager import analyse_complaint
+from data_manager import add
 app = Flask(__name__)
-#ai_manager = AIManager()
 
 # Route to display your separate HTML form
 @app.route('/')
@@ -50,24 +49,21 @@ def submit():
     user_email = request.form.get('user_email')
     subject = request.form.get('subject')
     user_complaint = request.form.get('user_complaint')
-
-    #if user_email is invalid format, return an error message
-    if not user_email or '@' not in user_email:
-        return "<h3>Error: Invalid email format. Please go back and enter a valid email.</h3><a href='/'>Go Back</a>"
     
     # You can process the data here in Python (e.g., save to a database, run a script)
     print(f"\nThe user email is {user_email}\n")
     print(f"Subject of email is {subject}\n")
     print(f"Complaint: {user_complaint}\n")
 
-    result = analyse_complaint(subject, user_complaint)  #call ur ai function here
-    print("test")
+    result = analyse_complaint(subject, user_complaint)
     if (0 < result.priority_score < 9):
-        print("True")
-        return f"<h3>Complaint Successfully</h3><a href='/'>Go Back</a>"
-        
-        #send the complaint id, email and complaint, datetime back to the database
+        now = datetime.now()
+        currentTime = now.strftime("%Y-%m-%d %H:%M:%S")
+        complaintList = [user_email, subject, user_complaint, currentTime]
+        print(complaintList)
+        #add("Emails", complaintList)
         # Return a response back to the browser window
+        return f"<h3>Complaint Successfully</h3><a href='/'>Go Back</a>"
     elif (result.priority_score == 0):
         print("Invalid complaint")
         return "422"

@@ -65,7 +65,7 @@ def analyse_complaint(subject: str, user_complaint: str) -> FinalComplaintAnalys
     prompt = f"SUBJECT: {subject}\nBODY: {user_complaint}"
 
     completion = client.beta.chat.completions.parse(
-        model="openrouter/free",   #Can change llm model here eg. openrouter/free
+        model="nvidia/nemotron-3-ultra-550b-a55b:free",   #Can change llm model here eg. openrouter/free
         messages=[
             {
                 "role": "system",
