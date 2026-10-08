@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
-#from ai_manager import AIManager        # put ur function  name here
+from ai_manager import analyse_complaint        # put ur function  name here
 
 app = Flask(__name__)
 #ai_manager = AIManager()
@@ -60,15 +60,19 @@ def submit():
     print(f"Subject of email is {subject}\n")
     print(f"Complaint: {user_complaint}\n")
 
-    #result = ai_manager.validate_email(user_email)  #call ur ai function here
-    #if (0 < result < 9):
+    result = analyse_complaint(subject, user_complaint)  #call ur ai function here
+    print("test")
+    if (0 < result.priority_score < 9):
+        print("True")
+        return f"<h3>Complaint Successfully</h3><a href='/'>Go Back</a>"
+        
         #send the complaint id, email and complaint, datetime back to the database
         # Return a response back to the browser window
-    #elif (result == 0):
-        #print("Invalid complaint")
+    elif (result.priority_score == 0):
+        print("Invalid complaint")
+        return "422"
         
-    return f"<h3>Complaint Successfully</h3><a href='/'>Go Back</a>"
-
+    
 if __name__ == '__main__':
     # FIXED: Added host="0.0.0.0" and changed port to 8080
     app.run(host="127.0.0.1", port=8080, debug=True)
