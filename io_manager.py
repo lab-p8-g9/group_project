@@ -13,7 +13,6 @@ def home():
 # Route to receive and process the form data from the user
 def validate_user_input(username, email, password):
     # Validate username
-    print(username)
     if not username or len(username) < 3:
         return "Error: Username must be at least 3 characters long."
 
@@ -33,7 +32,7 @@ def createAccount():
     username = request.form.get('user_name')
     user_email = request.form.get('user_email')
     password = request.form.get('user_password')
-    if(validate_user_input(username, user_email, password) != "Valid Input"):
+    if(validate_user_input(username, user_email, password).strip() != "Valid input."):
         print(validate_user_input(username, user_email, password))
         return f"<p>{validate_user_input(username, user_email, password)}</p><a href='/'>Try Again</a>"
     else:
