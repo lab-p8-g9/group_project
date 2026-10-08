@@ -61,11 +61,11 @@ class FinalComplaintAnalysis(BaseModel):
     reasoning: str
 
 
-def analyse_complaint(subject: str, body: str) -> FinalComplaintAnalysis:
-    prompt = f"SUBJECT: {subject}\nBODY: {body}"
+def analyse_complaint(subject: str, user_complaint: str) -> FinalComplaintAnalysis:
+    prompt = f"SUBJECT: {subject}\nBODY: {user_complaint}"
 
     completion = client.beta.chat.completions.parse(
-        model="nvidia/nemotron-3-ultra-550b-a55b:free",   #Can change llm model here eg. openrouter/free
+        model="openrouter/free",   #Can change llm model here eg. openrouter/free
         messages=[
             {
                 "role": "system",
@@ -117,12 +117,13 @@ def analyse_complaint(subject: str, body: str) -> FinalComplaintAnalysis:
 
 
 #Test working example
-if __name__ == "__main__":
-    email_subject = "Nigerian prince "
-    email_body = "My oil business closed down. Ill give you 500 million"
+#if __name__ == "__main__":
 
-    # Call function directly without instantiating a class object
-    decision = analyse_complaint(subject=email_subject, body=email_body)
+    # email_subject = "Oil Business"
+    # email_body = "My oil business closed down. Ill give you 500 million"
+
+    # # Call function directly without instantiating a class object
+    # decision = analyse_complaint(subject=email_subject, user_complaint=email_body)
     
-    if decision:
-        print(f"Category: {decision.category} | Priority: {decision.priority_score} | Assigned To: {decision.assigned_to}")
+    # if decision:
+    #     print(f"Category: {decision.category} | Priority: {decision.priority_score} | Assigned To: {decision.assigned_to}")
