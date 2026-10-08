@@ -118,7 +118,7 @@ def analyse_complaint(subject: str, body: str) -> FinalComplaintAnalysis:
 
 #Test working example
 if __name__ == "__main__":
-    email_subject = "Nigerian prince "
+    email_subject = "Oil Business"
     email_body = "My oil business closed down. Ill give you 500 million"
 
     # Call function directly without instantiating a class object
