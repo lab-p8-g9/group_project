@@ -1,5 +1,5 @@
 import os
-import sys
+
 from dotenv import load_dotenv
 from typing import Literal
 from pydantic import BaseModel, Field
@@ -8,11 +8,11 @@ from openai import OpenAI
 
 load_dotenv()
 
-openrouter_key = os.getenv("OPENROUTER_API_KEY")
+openrouter_key = os.getenv("OPENROUTER_API_KEY") #get your own api key
 
 client = OpenAI(
   base_url = "https://openrouter.ai/api/v1",
-  api_key = "openrouter_key",
+  api_key = openrouter_key
 )
 
 CategoryType = Literal[
@@ -23,7 +23,8 @@ CategoryType = Literal[
     "Product/Service Quality",
     "Delivery & Shipping",
     "Account",
-    "General Inquiry"
+    "General Inquiry",
+    "Spam"
 ]
 
 Team_Assignment = {
@@ -55,13 +56,13 @@ class LLMAssessment(BaseModel):
 class FinalComplaintAnalysis(BaseModel):
     category: str
     priority_score: int
-    assigned_to: Literal["Tech", "Admin"]
+    assigned_to: Literal["Tech", "Admin", "Spam"]
     summary: str
     reasoning: str
 
 
-def analyse_complaint(subject: str, body: str) -> FinalComplaintAnalysis:
-    prompt = f"SUBJECT: {subject}\nBODY: {body}"
+def analyse_complaint(subject: str, user_complaint: str) -> FinalComplaintAnalysis:
+    prompt = f"SUBJECT: {subject}\nBODY: {user_complaint}"
 
     completion = client.beta.chat.completions.parse(
         model="nvidia/nemotron-3-ultra-550b-a55b:free",   #Can change llm model here eg. openrouter/free
@@ -83,32 +84,46 @@ def analyse_complaint(subject: str, body: str) -> FinalComplaintAnalysis:
 
     llm_res = completion.choices[0].message.parsed
 
-    #if llm_res is None:
-       # raw_content = completion.choices[0].message.content
-       # raise ValueError(f"Model failed to return structured JSON. Raw output was: {raw_content}")
+    if llm_res is None:
+        return FinalComplaintAnalysis(
+            is_spam=True,
+            category="General Inquiry",
+            priority_score=0,
+            assigned_to="Spam",
+            summary="Unprocessable email content.",
+            reasoning="Unreadable or gibberish input.",
+        )
 
-   # if llm_res.is_spam:
-       # print(f"[IGNORED - SPAM DETECTED] Subject: '{subject}' | Reason: {llm_res.reasoning}")
-        # return None
+    if llm_res.is_spam:
+        return FinalComplaintAnalysis(
+            is_spam=True,
+            category=llm_res.category,
+            priority_score=0,
+            assigned_to="Spam",
+            summary=getattr(llm_res, "summary", "N/A"),
+            reasoning=llm_res.reasoning,
+        )
 
-    assigned_to = Team_Assignment.get(llm_res.category, "Admin")
+    assigned_to = Team_Assignment.get(llm_res.category, "Admin") #py will return Tech for "Security and Fraud", "Billing and Payment", and "Technical Support" and Admin for the rest
 
     return FinalComplaintAnalysis(
+        is_spam=False,
         category=llm_res.category,
         priority_score=llm_res.priority_score,
         assigned_to=assigned_to,
-        summary=llm_res.summary,
+        summary=getattr(llm_res, "summary", "N/A"),
         reasoning=llm_res.reasoning,
     )
 
 
 #Test working example
-if __name__ == "__main__":
-    email_subject = "System crash during checkout payment process"
-    email_body = "Your payment gateway threw a 500 server error and charged my credit card twice!"
+#if __name__ == "__main__":
 
-    # Call function directly without instantiating a class object
-    decision = analyse_complaint(subject=email_subject, body=email_body)
+    # email_subject = "Oil Business"
+    # email_body = "My oil business closed down. Ill give you 500 million"
+
+    # # Call function directly without instantiating a class object
+    # decision = analyse_complaint(subject=email_subject, user_complaint=email_body)
     
-    if decision:
-        print(f"Category: {decision.category} | Priority: {decision.priority_score} | Assigned To: {decision.assigned_to}")
+    # if decision:
+    #     print(f"Category: {decision.category} | Priority: {decision.priority_score} | Assigned To: {decision.assigned_to}")
