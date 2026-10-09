@@ -9,11 +9,8 @@ app = Flask(__name__)
 def home():
     return render_template('account.html')
 
-# Route to receive and process the form data from the user
-def validate_user_input(username, email, password):
-    # Validate username
-    if not username or len(username) < 3:
-        return "Error: Username must be at least 3 characters long."
+# Validate that the input format is correct
+def validate_user_input(email, password):
 
     # Validate email format
     if not email or '@' not in email:
@@ -28,16 +25,33 @@ def validate_user_input(username, email, password):
 
 @app.route("/createAccount", methods=['POST'])
 def createAccount():
-    username = request.form.get('user_name')
     user_email = request.form.get('user_email')
     password = request.form.get('user_password')
-    if(validate_user_input(username, user_email, password).strip() != "Valid input."):
-        print(validate_user_input(username, user_email, password))
-        return f"<p>{validate_user_input(username, user_email, password)}</p><a href='/'>Try Again</a>"
+    if(validate_user_input(user_email, password).strip() != "Valid input."):
+        print(validate_user_input(user_email, password))
+        return f"<p>{validate_user_input(user_email, password)}</p><a href='/'>Try Again</a>"
     else:
+        userList = [user_email, password]
+        print(userList)
+        #if(add("Accounts", userList) == "Successfully Added"):
+            #print()
         print("Account created")
         print("Redirecting to email complaint page")
         return redirect(url_for('emailPage'))
+        #else:
+            #print("Account already exists")
+            #return("""
+    # <!DOCTYPE html>
+    # <html>
+    # <body>
+    #     <h2>Automatic Alert</h2>
+    #     <script>
+    #         alert("I am an automatic alert box!");
+    #     </script>
+    # </body>
+    # </html>
+    # """)
+        
 
 @app.route('/email')
 def emailPage():
@@ -65,8 +79,8 @@ def submit():
         # Return a response back to the browser window
         return f"<h3>Complaint Successfully</h3><a href='/'>Go Back</a>"
     elif (result.priority_score == 0):
-        print("Invalid complaint")
-        return "422"
+        print("Invalid complaint or Spam")
+        return "<h3>Error</h3><p>This email is a spam</p>"
         
     
 if __name__ == '__main__':
@@ -74,5 +88,5 @@ if __name__ == '__main__':
     app.run(host="127.0.0.1", port=8080, debug=True)
 
 
-    #validate if username already taken and if email already exists in the database
+    #validate if email already exists in the database
     #set a format e.g. password must contain number, symbol, uppercase and lowercase with minimum 12 characters, and email must be in valid format. If not, return an error message to the user.
