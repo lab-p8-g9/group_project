@@ -28,17 +28,19 @@ c.execute('''CREATE TABLE IF NOT EXISTS AI_Complaint_Analysis(
 c.execute('''CREATE TABLE IF NOT EXISTS Admin_Team(
             ComplaintID INTEGER,
             Category TEXT,
-            PriorityScore INTEGER,
             Datetime TEXT,
             Deadline TEXT,
+            PriorityScore INTEGER,
+            UpdatedScore INTEGER,
             FOREIGN KEY(ComplaintID) REFERENCES Emails(ComplaintID));''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS Tech_Professionals(
             ComplaintID INTEGER,
             Category TEXT,
-            PriorityScore INTEGER,
             Datetime TEXT,
             Deadline TEXT,
+            PriorityScore INTEGER,
+            UpdatedScore INTEGER,
             FOREIGN KEY(ComplaintID) REFERENCES Emails(ComplaintID));''')
 
 def save_to_SQL(table_name, list_of_data): #SQL is our main database
@@ -54,11 +56,11 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
     elif table_name == 'AI_Complaint_Analysis': #4 data
         c.execute('''INSERT INTO AI_Complaint_Analysis VALUES(?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
 
-    elif table_name == 'Admin_Team': #5 data
-        c.execute('''INSERT INTO Admin_Team VALUES(?, ?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4]))
+    elif table_name == 'Admin_Team': #6 data
+        c.execute('''INSERT INTO Admin_Team VALUES(?, ?, ?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4], list_of_data[5]))
 
-    elif table_name == 'Tech_Professionals': #5 data
-        c.execute('''INSERT INTO Tech_Professionals VALUES(?, ?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4]))
+    elif table_name == 'Tech_Professionals': #6 data
+        c.execute('''INSERT INTO Tech_Professionals VALUES(?, ?, ?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4], list_of_data[5]))
 
     else:
         print('Invalid table name.')
@@ -114,6 +116,24 @@ def search_complaint(complaint_id):
         return None
     else:
         return result
+
+def check_email_in_accounts(email):
+    db = connect('complaint.db')
+    c = db.cursor()
+
+    c.execute(''' SELECT Address FROM Accounts
+                WHERE Address = ?''', (email,))
+
+    result = c.fetchone()
+
+    db.close()
+
+    if result == None:
+        return 'Email ' + str(email) + ' not found.'
+    else:
+        return 'Email ' + str(email) + ' found.'
+   
+
 
 #json: complaint id, user id, email, subject, content, datetime_sent
 
