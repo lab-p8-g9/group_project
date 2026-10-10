@@ -1,12 +1,15 @@
-
 from sqlite3 import connect
-from datetime import datetime
-
-db = connect('complaint.db')
-c = db.cursor()
+from datetime import datetime, timedelta
 
 
-def Deadline_Classification(priority_score, date_created, current_date):
+# Connect to database 'complain.db"
+def Logic_Connect_Database():
+    return connect("complaint.db")
+
+
+
+# Calculate priority and deadline
+def Logic_Deadline_Classification(priority_score, date_created, current_date):
 
     days_passed = (current_date.date() - date_created.date()).days
 
@@ -18,67 +21,99 @@ def Deadline_Classification(priority_score, date_created, current_date):
     if new_priority > 8:
         new_priority = 8
 
-    return new_priority
+    days_to_deadline = max(0, 8 - priority_score)
+
+    deadline_date = date_created + timedelta(days=days_to_deadline)
+
+    return new_priority, deadline_date
 
 
-current_date = datetime.now()
+# Update priority and deadline for one table use function for each table respectively
+def Logic_Update_Priority(db, table_name):
 
-# Update Tech Professionals
-c.execute("SELECT id, priority, date FROM Tech_Professionals")
-Tech_data = c.fetchall()
+    if table_name not in ("Admin", "Tech_Professionals"):
+        raise ValueError("Invalid table name")
 
-for complaint_id, priority, date in Tech_data:
+    c = db.cursor()
+    current_date = datetime.now()
 
-    date_created = datetime.strptime(date, "%Y-%m-%d")
+    c.execute(f"""
+        SELECT ComplaintID, PriorityScore, Datetime
+        FROM {table_name}
+    """)
 
-    new_priority = Deadline_Classification(
-        priority, date_created, current_date
-    )
+    complaint_data = c.fetchall()
 
-    c.execute(
-        "UPDATE Tech_Professionals SET priority = ? WHERE id = ?",
-        (new_priority, complaint_id)
-    )
+    for complaint_id, Priority, date in complaint_data:
 
+        date_created = datetime.strptime(date, "%Y-%m-%d")
 
+        new_priority, deadline_date = Logic_Deadline_Classification(
+            Priority, date_created, current_date
+        )
 
-# Update Admin
-c.execute("SELECT id, priority, date FROM Admin")
-Admin_data = c.fetchall()
-
-for complaint_id, priority, date in Admin_data:
-
-    date_created = datetime.strptime(date, "%Y-%m-%d")
-
-    new_priority = Deadline_Classification(
-        priority, date_created, current_date
-    )
-
-    c.execute(
-        "UPDATE Admin SET priority = ? WHERE id = ?",
-        (new_priority, complaint_id)
-    )
+        c.execute(
+            f"""UPDATE {table_name}
+                SET FinalPriorityScore = ?, Deadline = ?
+                WHERE ComplaintID = ?""",
+            (
+                new_priority,
+                deadline_date.strftime("%Y-%m-%d"),
+                complaint_id
+            )
+        )
 
 
-db.commit()
+# Sort complaints from highest to lowest priority using SQL Desc
+def Logic_Sort_Complaints(db, table_name):
 
-# Sort Tech Professionals after updating
-c.execute("""
-    SELECT * FROM Tech_Professionals
-    ORDER BY priority DESC
-""")
-Tech_sorted = c.fetchall()
+    if table_name not in ("Admin", "Tech_Professionals"):
+        raise ValueError("Invalid table name")
 
-# Sort Admin after updating
-c.execute("""
-    SELECT * FROM Admin
-    ORDER BY priority DESC
-""")
-Admin_sorted = c.fetchall()
+    c = db.cursor()
 
+    c.execute(f"""
+        SELECT *
+        FROM {table_name}
+        ORDER BY FinalPriorityScore DESC, Deadline ASC
+    """)
 
+    return c.fetchall()
 
 
+# Display sorted complaints for test only
 
-db.close()
+def Logic_Display_Complaints(table_name, complaints):
+
+    print(f"\n{table_name} Complaints:")
+
+    for complaint in complaints:
+        print(complaint)
+
+
+# Main function applications for table 'tech_professional' & 'Admin' in 'complaint.db'
+
+
+def Logic_Main():
+
+    db = Logic_Connect_Database()
+
+    try:
+        for table_name in ("Admin", "Tech_Professionals"):
+            Logic_Update_Priority(db, table_name)
+
+        # Save updated scores and deadlines
+        db.commit()
+
+        for table_name in ("Admin", "Tech_Professionals"):
+            sorted_complaints = Logic_Sort_Complaints(db, table_name)
+
+            Logic_Display_Complaints(table_name, sorted_complaints)
+
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    Logic_Main()
 
