@@ -111,4 +111,3 @@ if __name__ == '__main__':
 
 
     #validate if email already exists in the database
-    #set a format e.g. password must contain number, symbol, uppercase and lowercase with minimum 12 characters, and email must be in valid format. If not, return an error message to the user.
