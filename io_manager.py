@@ -1,9 +1,11 @@
+# importing external libraries
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
 from ai_manager import analyse_complaint
 from data_manager import save_to_SQL, check_email_in_accounts, load_from_SQL, load_from_JSON
 app = Flask(__name__)
 
+# collect summary of what happened in the I/O Manager
 log = []
 def summary(updates,actions=""):
     if(updates == "Update"):
@@ -58,13 +60,14 @@ def createAccount():
         summary("Update", "User entered a valid email and password and is redirected to complaint page")
         userList = [user_email, password]
         print(userList)
-        if(save_to_SQL("Accounts", userList) == False):
+        if(save_to_SQL("Accounts", userList) == True):
             print("Login/Account Created")
             print("Redirecting to email complaint page")
             return redirect(url_for('emailPage'))
         else:
             print("Account already exists")
             return("""
+            <a href='/Account'>Go Back</a>
             <script>
                alert("Try Again");
             </script>
@@ -90,7 +93,7 @@ def submit():
     if(check_email_in_accounts(user_email) == False):
         summary("Update", "User needs to re-enter an existing email")
         print("Please input an email that exists")
-        return "<p>Hello</p>"
+        return "<a href='/email'>Go Back</a><script>alert('Try Again');</script>"
     elif(check_email_in_accounts(user_email) == True):
         summary("Update", "User's email is valid, complaint is being assessed by AI now")
         result = analyse_complaint(subject, user_complaint)

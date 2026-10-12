@@ -52,13 +52,19 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
             c.execute('''INSERT INTO Accounts VALUES(?, ?)''', (list_of_data[0], list_of_data[1]))
         except IntegrityError as e:
             db.rollback()
-            db.close()
 
             if "UNIQUE" in str(e):
-                return "User already exists"
+                c.execute('''SELECT (EXISTS (SELECT 1 FROM Accounts WHERE Address = ? AND Password = ?))''',(list_of_data[0], list_of_data[1]))
+                result = c.fetchone()
+                if (result[0] == 1):
+                    return True
+                else:
+                    return "User already exists" 
 
             print("Database error:", e)
             return False
+        finally:
+            db.close()
                     
     elif table_name == 'Emails': #5 data, save to json backup as well
         try:
@@ -215,7 +221,7 @@ def check_email_in_accounts(email):
    
 
 
-#json: complaint id, user id, email, subject, content, datetime_sent
+#json: complaint id, email, subject, content, datetime_sent
 
 db.commit()
 db.close()
