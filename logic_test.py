@@ -2,15 +2,20 @@ from datetime import datetime
 from logic_manager import Logic_Deadline_Classification
 
 
-# While our actual logic_manager access SQL files to excute Dealine_Classification and file sorting.
-# This test script is strictly testing whether our deadline_Classification is working as expected. 
-# SQL file handling functions are strictly not tested due to the nature of manipulating files!
-#ExpectPriority score and ExpectedDealine are the last two corner of the test_data this data are being changed by Deadline_Classfication
-#actual_priority and actual_deadline are the value we are supposed to update in the last two column of the test_data
-#Thus, ExpectPriority and ExpectedDealine are use to compared to the return value of actual_priority abd actual_deadline
+# This test script focuses on the core priority and
+# deadline calculation logic.
+#
+# Database operations and SQL sorting in logic_manager are outside
+# the scope of these unit tests.
+#
+# Hardcoded test values are used to simulate
+# priority scores without calling the live AI API.
 
 
-# ComplaintID, PriorityScore, Datetime, ExpectedPriority, ExpectedDeadline
+# ComplaintID (input), PriorityScore (input), Datetime (input), ExpectedPriority, ExpectedDeadline
+# Eg first data set has PriorityScore: 3 and the date created is 08 oct 2026
+# if the function works it will have an updatescore as 5 and a due deadline date of 13 oct 2026
+
 test_data = [
     (1, 3, "2026-10-08", 5, "2026-10-13"),
     (2, 5, "2026-10-07", 8, "2026-10-10"),
@@ -35,3 +40,4 @@ for complaint_id, priority, date, expected_priority, expected_deadline in test_d
         print(f"Complaint {complaint_id}: PASS")
     else:
         print(f"Complaint {complaint_id}: FAIL")
+
