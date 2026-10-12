@@ -56,6 +56,7 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
             if "UNIQUE" in str(e):
                 c.execute('''SELECT (EXISTS (SELECT 1 FROM Accounts WHERE Address = ? AND Password = ?))''',(list_of_data[0], list_of_data[1]))
                 result = c.fetchone()
+                db.close()
                 if (result[0] == 1):
                     return True
                 else:
@@ -63,8 +64,6 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
 
             print("Database error:", e)
             return False
-        finally:
-            db.close()
                     
     elif table_name == 'Emails': #5 data, save to json backup as well
         try:

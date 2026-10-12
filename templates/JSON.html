@@ -24,7 +24,7 @@
             </tr>
             {% endfor %}
         </table>
-        <button onclick="history.back();">Go Back</button>
+        <button onclick="window.location.replace('/');">Load SQL</button>
         <form action="{{ url_for('accountPage') }}" method="get">
             <button type="submit">Go to Account</button>
         </form>
