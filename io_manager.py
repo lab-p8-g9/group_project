@@ -78,11 +78,11 @@ def submit():
     print(f"Subject of email is {subject}\n")
     print(f"Complaint: {user_complaint}\n")
 
-    if(check_email_in_accounts(user_email) == "Email Address does not exist"):
+    if(check_email_in_accounts(user_email) == f"Email: {user_email} not found."):
         summary("Update", "User needs to re-enter an existing email")
         print("Please input an email that exists")
         return "<p>Hello</p>"
-    elif(check_email_in_accounts(user_email) == "Email exists"):
+    elif(check_email_in_accounts(user_email) == f"Email: {user_email} found."):
         summary("Update", "User's email is valid, complaint is being assessed by AI now")
         result = analyse_complaint(subject, user_complaint)
         if (0 < result.priority_score < 9):
