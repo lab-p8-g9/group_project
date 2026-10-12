@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
 from ai_manager import analyse_complaint
-from data_manager import save_to_SQL, check_email_in_accounts
+from data_manager import save_to_SQL, check_email_in_accounts, fetchAdmin
 app = Flask(__name__)
 
 log = []
@@ -14,7 +14,6 @@ def summary(updates,actions=""):
         for history in log:
             print(f"{i}){history}")
             i+=1
-
 
 # Validate that the input format is correct
 def validate_user_input(email, password):
@@ -35,7 +34,8 @@ def validate_user_input(email, password):
 # Route to display your separate HTML form
 @app.route('/')
 def home():
-    return render_template('account.html')
+    results = fetchAdmin()
+    return render_template('load.html', items_list = results)
 
 @app.route("/createAccount", methods=['POST'])
 def createAccount():
@@ -78,11 +78,11 @@ def submit():
     print(f"Subject of email is {subject}\n")
     print(f"Complaint: {user_complaint}\n")
 
-    if(check_email_in_accounts(user_email) == "Email Address does not exist"):
+    if(check_email_in_accounts(user_email) == f"Email: {user_email} not found."):
         summary("Update", "User needs to re-enter an existing email")
         print("Please input an email that exists")
         return "<p>Hello</p>"
-    elif(check_email_in_accounts(user_email) == "Email exists"):
+    elif(check_email_in_accounts(user_email) == f"Email: {user_email} found."):
         summary("Update", "User's email is valid, complaint is being assessed by AI now")
         result = analyse_complaint(subject, user_complaint)
         if (0 < result.priority_score < 9):
@@ -103,7 +103,7 @@ def submit():
                         alert("Try Again");
                     </script>
                     """)
-        
+
     
 if __name__ == '__main__':
     # FIXED: Added host="0.0.0.0" and changed port to 8080
@@ -111,4 +111,3 @@ if __name__ == '__main__':
 
 
     #validate if email already exists in the database
-    #set a format e.g. password must contain number, symbol, uppercase and lowercase with minimum 12 characters, and email must be in valid format. If not, return an error message to the user.
