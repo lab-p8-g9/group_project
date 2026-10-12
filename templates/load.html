@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Load Table</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    <body>
+        <h1>Admin Team</h1>
+        <table>
+            <tr>
+                <th>ComplaintID</th>
+                <th>Category</th>
+                <th>Priority Score</th>
+                <th>Datetime</th>
+                <th>Deadline</th>
+            </tr>
+            {% for row in items_list %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>
