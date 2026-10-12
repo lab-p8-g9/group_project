@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
 from ai_manager import analyse_complaint
-from data_manager import save_to_SQL, check_email_in_accounts, fetchAdmin
+from data_manager import save_to_SQL, check_email_in_accounts, load_from_SQL, load_from_JSON
 app = Flask(__name__)
 
 log = []
@@ -34,8 +34,18 @@ def validate_user_input(email, password):
 # Route to display your separate HTML form
 @app.route('/')
 def home():
-    results = fetchAdmin()
-    return render_template('load.html', items_list = results)
+    admins = load_from_SQL("Admin_Team")
+    techPro = load_from_SQL("Tech_Professionals")
+    return render_template('load.html', items_list = admins, items_list2 = techPro)
+
+@app.route("/json")
+def loadJSON():
+    json_data = load_from_JSON()
+    return render_template('json.html', data = json_data)
+
+@app.route("/Account")
+def accountPage():
+    return render_template('account.html')
 
 @app.route("/createAccount", methods=['POST'])
 def createAccount():
@@ -48,8 +58,7 @@ def createAccount():
         summary("Update", "User entered a valid email and password and is redirected to complaint page")
         userList = [user_email, password]
         print(userList)
-        if(save_to_SQL("Accounts", userList) == "Successfully Added"):
-            #print()
+        if(save_to_SQL("Accounts", userList) == False):
             print("Login/Account Created")
             print("Redirecting to email complaint page")
             return redirect(url_for('emailPage'))
@@ -78,11 +87,11 @@ def submit():
     print(f"Subject of email is {subject}\n")
     print(f"Complaint: {user_complaint}\n")
 
-    if(check_email_in_accounts(user_email) == f"Email: {user_email} not found."):
+    if(check_email_in_accounts(user_email) == False):
         summary("Update", "User needs to re-enter an existing email")
         print("Please input an email that exists")
         return "<p>Hello</p>"
-    elif(check_email_in_accounts(user_email) == f"Email: {user_email} found."):
+    elif(check_email_in_accounts(user_email) == True):
         summary("Update", "User's email is valid, complaint is being assessed by AI now")
         result = analyse_complaint(subject, user_complaint)
         if (0 < result.priority_score < 9):
