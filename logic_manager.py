@@ -2,9 +2,41 @@ from sqlite3 import connect
 from datetime import datetime, timedelta
 
 
+
 # Connect to database 'complain.db"
 def Logic_Connect_Database():
     return connect("complaint.db")
+
+
+def Logic_Assign_Complaints(db):
+
+    c = db.cursor()
+
+    # Retrieve all AI-classified complaints
+    c.execute("""
+        SELECT ComplaintID, Category, PriorityScore, AssignedTo
+        FROM AI_Complaint_Analysis
+    """)
+
+    complaints = c.fetchall()
+
+    for complaint_id, category, priority, assigned_to in complaints:
+
+        if assigned_to == "Tech_Professionals":
+            table_name = "Tech_Professionals"
+
+        elif assigned_to == "Admin_Team":
+            table_name = "Admin_Team"
+
+        else:
+            continue
+
+        # Insert complaint into the correct table
+        c.execute(f"""
+            INSERT INTO {table_name}
+            (ComplaintID, Category, PriorityScore)
+            VALUES (?, ?, ?)
+        """, (complaint_id, category, priority))
 
 
 
@@ -31,7 +63,7 @@ def Logic_Deadline_Classification(priority_score, date_created, current_date):
 # Update priority and deadline for one table use function for each table respectively
 def Logic_Update_Priority(db, table_name):
 
-    if table_name not in ("Admin", "Tech_Professionals"):
+    if table_name not in ("Admin_Team", "Tech_Professionals"):
         raise ValueError("Invalid table name")
 
     c = db.cursor()
@@ -54,7 +86,7 @@ def Logic_Update_Priority(db, table_name):
 
         c.execute(
             f"""UPDATE {table_name}
-                SET FinalPriorityScore = ?, Deadline = ?
+                SET UpdatedScore = ?, Deadline = ?
                 WHERE ComplaintID = ?""",
             (
                 new_priority,
@@ -67,7 +99,7 @@ def Logic_Update_Priority(db, table_name):
 # Sort complaints from highest to lowest priority using SQL Desc
 def Logic_Sort_Complaints(db, table_name):
 
-    if table_name not in ("Admin", "Tech_Professionals"):
+    if table_name not in ("Admin_Team", "Tech_Professionals"):
         raise ValueError("Invalid table name")
 
     c = db.cursor()
@@ -75,7 +107,7 @@ def Logic_Sort_Complaints(db, table_name):
     c.execute(f"""
         SELECT *
         FROM {table_name}
-        ORDER BY FinalPriorityScore DESC, Deadline ASC
+        ORDER BY UpdatedScore DESC, Deadline ASC
     """)
 
     return c.fetchall()
@@ -99,13 +131,18 @@ def Logic_Main():
     db = Logic_Connect_Database()
 
     try:
-        for table_name in ("Admin", "Tech_Professionals"):
+        # Step 1: Assign complaints to their respective tables
+        Logic_Assign_Complaints(db)
+
+        # Step 2: Update priorities and deadlines
+        for table_name in ("Admin_Team", "Tech_Professionals"):
             Logic_Update_Priority(db, table_name)
 
-        # Save updated scores and deadlines
+        # Step 3: Save database changes
         db.commit()
 
-        for table_name in ("Admin", "Tech_Professionals"):
+        # Step 4: Sort and display complaints
+        for table_name in ("Admin_Team", "Tech_Professionals"):
             sorted_complaints = Logic_Sort_Complaints(db, table_name)
 
             Logic_Display_Complaints(table_name, sorted_complaints)
