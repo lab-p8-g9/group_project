@@ -5,8 +5,21 @@ import json
 import os
 
 
-# STEP 1: READ INCOMING AI JSON FILE
 
+def Logic_Create_Email_List(email, subject, content):
+
+    email_list = [{
+        "Email": email,
+        "Subject": subject,
+        "Content": content
+    }]
+
+    save_to_JSON(email_list)
+
+
+
+
+# STEP 1: READ INCOMING AI JSON FILE
 
 def Logic_Read_AI_JSON(file_name):
 
@@ -27,7 +40,7 @@ def Logic_Save_Emails_To_SQL(db, emails):
     for email_data in emails:
 
         # Get email details from JSON
-        email_address = email_data["emailAddress"]
+        email_address = email_data["email_address"]
         subject = email_data["subject"]
         content = email_data["content"]
 
@@ -62,14 +75,13 @@ def Logic_Save_Emails_To_SQL(db, emails):
 
 # STEP 3: SAVE AI ANALYSIS INTO SQL
 
-
 def Logic_Save_AI_Analysis_To_SQL(db, email_data, complaint_id):
 
     c = db.cursor()
 
     category = email_data["category"]
-    priority_score = email_data["priorityScore"]
-    assigned_to = email_data["assignTo"]
+    priority_score = email_data["priority_score"]
+    assigned_to = email_data["assign_to"]
 
     c.execute("""
         INSERT INTO AI_Complaint_Analysis
@@ -84,38 +96,8 @@ def Logic_Save_AI_Analysis_To_SQL(db, email_data, complaint_id):
 
 
 
-# STEP 4: EXPORT EMAILS SQL TO complaint.json
 
-
-def Logic_Export_Emails_To_JSON(db):
-
-    c = db.cursor()
-
-    c.execute("""
-        SELECT ComplaintID, Email, Subject, Content, Datetime
-        FROM Emails
-    """)
-
-    emails = c.fetchall()
-    email_list = []
-
-    for complaint_id, email, subject, content, date_time in emails:
-
-        email_list.append({
-            "ComplaintID": complaint_id,
-            "Email": email,
-            "Subject": subject,
-            "Content": content,
-            "Datetime": date_time
-        })
-
-    with open("complaint.json", "w", encoding="utf-8") as file:
-        json.dump({"emails": email_list}, file, indent=4)
-
-    print("Emails exported to complaint.json successfully.")
-
-
-# STEP 5: PROCESS INCOMING JSON
+# STEP 4: PROCESS INCOMING JSON
 
 def Logic_Process_Incoming_JSON(file_name):
 
@@ -135,8 +117,7 @@ def Logic_Process_Incoming_JSON(file_name):
 
         db.commit()
 
-        # Export Emails table to complaint.json
-        Logic_Export_Emails_To_JSON(db)
+
 
         print("Incoming JSON processed successfully.")
         return True
@@ -324,3 +305,5 @@ def Logic_Main(file_name):
 
     else:
         print("JSON processing failed. Logic Manager stopped.")
+
+
