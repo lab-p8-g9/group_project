@@ -131,6 +131,13 @@ def loadSQL():
                 # added to log to display summary at the end
                 summary("Update", "Loaded data from Tech_Professionals in SQL")
                 load_from_SQL("Tech_Professionals")
+                print("\n")
+                for complaint in result:
+                    # 1. Unpack the columns for the current row
+                    complaint_id, category, priorityScore, date, deadline = complaint[:5]
+                    print(f"ComplaintID: {complaint_id}\nCategory: {category}\nPriority Score: {priorityScore}")
+                    print(f"Datetime: {date}\nDeadline: {deadline}")
+                    print("-" * 20 + "\n")
                 break
             # if user input anything other then 1 or 2
             case _:
