@@ -12,15 +12,18 @@ def Logic_Assign_Complaints(db):
 
     c = db.cursor()
 
-    # Retrieve all AI-classified complaints
     c.execute("""
-        SELECT ComplaintID, Category, PriorityScore, AssignedTo
-        FROM AI_Complaint_Analysis
+        SELECT a.ComplaintID, a.Category,
+               a.PriorityScore, a.AssignedTo,
+               e.Datetime
+        FROM AI_Complaint_Analysis a
+        JOIN Emails e
+        ON a.ComplaintID = e.ComplaintID
     """)
 
     complaints = c.fetchall()
 
-    for complaint_id, category, priority, assigned_to in complaints:
+    for complaint_id, category, priority, assigned_to, date in complaints:
 
         if assigned_to == "Tech_Professionals":
             table_name = "Tech_Professionals"
@@ -31,12 +34,21 @@ def Logic_Assign_Complaints(db):
         else:
             continue
 
-        # Insert complaint into the correct table
+        # Prevent duplicate assignments
+        c.execute(
+            f"SELECT 1 FROM {table_name} WHERE ComplaintID = ?",
+            (complaint_id,)
+        )
+
+        if c.fetchone():
+            continue
+
+        # Insert complaint with its date
         c.execute(f"""
             INSERT INTO {table_name}
-            (ComplaintID, Category, PriorityScore)
-            VALUES (?, ?, ?)
-        """, (complaint_id, category, priority))
+            (ComplaintID, Category, Datetime, PriorityScore)
+            VALUES (?, ?, ?, ?)
+        """, (complaint_id, category, date, priority))
 
 
 
@@ -78,7 +90,7 @@ def Logic_Update_Priority(db, table_name):
 
     for complaint_id, Priority, date in complaint_data:
 
-        date_created = datetime.strptime(date, "%Y-%m-%d")
+        date_created = datetime.fromisoformat(date)
 
         new_priority, deadline_date = Logic_Deadline_Classification(
             Priority, date_created, current_date
@@ -131,25 +143,26 @@ def Logic_Main():
     db = Logic_Connect_Database()
 
     try:
-        # Step 1: Assign complaints to their respective tables
+        # Assign complaints to departments
         Logic_Assign_Complaints(db)
 
-        # Step 2: Update priorities and deadlines
-        for table_name in ("Admin_Team", "Tech_Professionals"):
-            Logic_Update_Priority(db, table_name)
+        # Update priority and deadline
+        Logic_Update_Priority(db, "Admin_Team")
+        Logic_Update_Priority(db, "Tech_Professionals")
 
-        # Step 3: Save database changes
+        # Save changes
         db.commit()
 
-        # Step 4: Sort and display complaints
-        for table_name in ("Admin_Team", "Tech_Professionals"):
-            sorted_complaints = Logic_Sort_Complaints(db, table_name)
+        # Sort complaints
+        admin_complaints = Logic_Sort_Complaints(db, "Admin_Team")
+        tech_complaints = Logic_Sort_Complaints(db, "Tech_Professionals")
 
-            Logic_Display_Complaints(table_name, sorted_complaints)
+        # Display complaints
+        Logic_Display_Complaints("Admin_Team", admin_complaints)
+        Logic_Display_Complaints("Tech_Professionals", tech_complaints)
 
     finally:
         db.close()
-
 
 if __name__ == "__main__":
     Logic_Main()
