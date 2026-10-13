@@ -63,24 +63,12 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
                     return "User already exists" 
 
             print("Database error:", e)
+            db.close()
             return False
                     
     elif table_name == 'Emails': #5 data, save to json backup as well
         try:
             c.execute('''INSERT INTO Emails VALUES(?, ?, ?, ?, ?)''', (None, list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
-
-            complaint = {
-                        'ComplaintID': c.lastrowid,
-                        'Email': list_of_data[0],
-                        'Subject': list_of_data[1],
-                        'Content': list_of_data[2],
-                        'Datetime': list_of_data[3]
-                        }
-
-            db.commit()
-
-            if not save_to_JSON(complaint):
-                print('Complaint saved to SQL, but JSON backup failed.')
 
         except (Error, IndexError, TypeError) as e:
             print('Failed to insert:', e)
@@ -90,7 +78,7 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
             
     elif table_name == 'AI_Complaint_Analysis': #4 data
         try:
-            c.execute('''INSERT INTO AI_Complaint_Analysis VALUES(?, ?, ?, ?)''', (None, list_of_data[0], list_of_data[1], list_of_data[2]))
+            c.execute('''INSERT INTO AI_Complaint_Analysis VALUES(?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
         except (Error, IndexError, TypeError) as e:
             print('Failed to insert:', e)
             db.rollback()
@@ -122,6 +110,7 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
 
     db.commit()
     db.close()
+    print('SQL database successfully updated!')
     return True
 
 def load_from_SQL(table_name):
@@ -135,6 +124,7 @@ def load_from_SQL(table_name):
         c.execute('''SELECT * FROM Tech_Professionals''')
     else:
         db.close()
+        print('Unable to load table.')
         return False 
 
     result = c.fetchall()
@@ -142,7 +132,7 @@ def load_from_SQL(table_name):
     db.close()
     return result
 
-def save_to_JSON(complaint): #JSON is our backup database ; complaint is a DICTIONARY
+def save_to_JSON(complaint): #can handle one dict or list of dict
     try:
         complaints = load_from_JSON()
 
@@ -150,19 +140,32 @@ def save_to_JSON(complaint): #JSON is our backup database ; complaint is a DICTI
             print("JSON backup not updated.")
             return False
 
-        complaints.append(complaint)
+        if isinstance(complaint, list):
+            if not all(isinstance(item, dict) for item in complaint):
+                print("Invalid complaint data.")
+                return False
 
-        with open('complaints.json', 'w') as f:
+            complaints.extend(complaint)
+
+        elif isinstance(complaint, dict):
+            complaints.append(complaint)
+
+        else:
+            print("Invalid complaint data.")
+            return False
+
+        with open('complaint.json', 'w') as f:
             json.dump(complaints, f, indent=4)
 
         return True
+
     except (OSError, TypeError, ValueError) as e:
         print("Error saving JSON file:", e)
         return False
     
 def load_from_JSON():
     try:
-        with open('complaints.json', 'r') as file:
+        with open('complaint.json', 'r') as file:
             records = json.load(file)
 
         if isinstance(records, list):
@@ -172,55 +175,33 @@ def load_from_JSON():
             return None
 
     except FileNotFoundError:
-        print("complaints.json not found.")
+        print("complaint.json not found.")
         return []
 
     except json.JSONDecodeError:
-        print("complaints.json is corrupted.")
+        print("complaint.json is corrupted.")
         return None
 
     except OSError as e:
         print("Error loading JSON file:", e)
         return None
 
-def search_complaint(complaint_id):
-    db = connect('complaint.db')
-    c = db.cursor()
+def new_JSON_section():
+    try:
+        with open('complaint.json', 'w') as file:
+            json.dump([], file, indent=4)
 
-    c.execute('''SELECT * FROM Emails
-                WHERE ComplaintID = ?''', (complaint_id,))
-
-    result = c.fetchone()
-
-    db.close()
-
-    if result == None:
-        print("Complaint ID " + str(complaint_id) + " not found." )
-        return None
-    else:
-        return result
-
-def check_email_in_accounts(email):
-    db = connect('complaint.db')
-    c = db.cursor()
-
-    c.execute(''' SELECT Address FROM Accounts
-                WHERE Address = ?''', (email,))
-
-    result = c.fetchone()
-
-    db.close()
-
-    if result == None:
-        print('Email ' + str(email) + ' not found.')
-        return False
-    else:
-        print('Email ' + str(email) + ' found.')
+        print('New JSON file created successfully.')
         return True
-   
+
+    except OSError as e:
+        print('Unable to make new JSON file:', e)
+        return False
 
 
-#json: complaint id, email, subject, content, datetime_sent
+
+
+#json: complaint id, email, subject, content, deadline
 
 db.commit()
 db.close()
