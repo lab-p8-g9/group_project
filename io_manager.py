@@ -1,17 +1,24 @@
 #import external functions from the data_manger and ai_manager
-from data_manager import save_to_SQL, load_from_SQL
+from data_manager import save_to_SQL, load_from_SQL, load_from_JSON
 from ai_manager import analyse_complaint
 
 #log to store summary of what happened
 log = []
 #emailPass to store email and password
-emailPass = ["a@b.com", "1111!!!!bbbbBBBB"]
+emailPass = ["", ""]
 
 #inititalize the Program
 def initialize():
     print("---------------------------------")
     print("Welcome to AI Complaint Classifier")
     print("---------------------------------")
+    print("This is the complaints from previous Session")
+    result = load_from_JSON()
+    print("\n")
+    for complaint in result:
+        print(f"Email: {complaint["Email"]}\nSubject: {complaint["Subject"]}\nContent: {complaint["Content"]}")
+        print("-" * 20 + "\n")
+
 
 # collect summary of what happened in the I/O Manager
 def summary(updates,actions=""):
@@ -77,7 +84,7 @@ def Account():
             continue    #go to next iteration
         else:   #else if user enter everything right
             # added to log to display summary at the end
-            summary("Update", "User created new account/ login successfule")
+            summary("Update", "User created new account/ login successful")
             print("Account successfully created/ Login Successful\n")
             break   #escape the loop
             
