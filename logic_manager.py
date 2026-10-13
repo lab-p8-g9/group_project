@@ -1,6 +1,155 @@
 from sqlite3 import connect
 from datetime import datetime, timedelta
+from data_manager import *
+import json
+import os
 
+
+# STEP 1: READ INCOMING AI JSON FILE
+
+
+def Logic_Read_AI_JSON(file_name):
+
+    with open(file_name, "r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    return data["emails"]
+
+
+
+# STEP 2: SAVE EMAILS INTO SQL
+
+
+def Logic_Save_Emails_To_SQL(db, emails):
+
+    c = db.cursor()
+
+    for email_data in emails:
+
+        # Get email details from JSON
+        email_address = email_data["emailAddress"]
+        subject = email_data["subject"]
+        content = email_data["content"]
+
+        # Generate current date and time
+        current_datetime = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        # Insert email into Emails table
+        c.execute("""
+            INSERT INTO Emails
+            (Email, Subject, Content, Datetime)
+            VALUES (?, ?, ?, ?)
+        """, (
+            email_address,
+            subject,
+            content,
+            current_datetime
+        ))
+
+        # Get ComplaintID automatically assigned by SQLite
+        complaint_id = c.lastrowid
+
+        # STEP 3: Save corresponding AI analysis
+        Logic_Save_AI_Analysis_To_SQL(
+            db,
+            email_data,
+            complaint_id
+        )
+
+
+
+# STEP 3: SAVE AI ANALYSIS INTO SQL
+
+
+def Logic_Save_AI_Analysis_To_SQL(db, email_data, complaint_id):
+
+    c = db.cursor()
+
+    category = email_data["category"]
+    priority_score = email_data["priorityScore"]
+    assigned_to = email_data["assignTo"]
+
+    c.execute("""
+        INSERT INTO AI_Complaint_Analysis
+        (ComplaintID, Category, PriorityScore, AssignedTo)
+        VALUES (?, ?, ?, ?)
+    """, (
+        complaint_id,
+        category,
+        priority_score,
+        assigned_to
+    ))
+
+
+
+# STEP 4: EXPORT EMAILS SQL TO complaint.json
+
+
+def Logic_Export_Emails_To_JSON(db):
+
+    c = db.cursor()
+
+    c.execute("""
+        SELECT ComplaintID, Email, Subject, Content, Datetime
+        FROM Emails
+    """)
+
+    emails = c.fetchall()
+    email_list = []
+
+    for complaint_id, email, subject, content, date_time in emails:
+
+        email_list.append({
+            "ComplaintID": complaint_id,
+            "Email": email,
+            "Subject": subject,
+            "Content": content,
+            "Datetime": date_time
+        })
+
+    with open("complaint.json", "w", encoding="utf-8") as file:
+        json.dump({"emails": email_list}, file, indent=4)
+
+    print("Emails exported to complaint.json successfully.")
+
+
+# STEP 5: PROCESS INCOMING JSON
+
+def Logic_Process_Incoming_JSON(file_name):
+
+    if not os.path.exists(file_name):
+        print("AI JSON file not found.")
+        return False
+
+    db = Logic_Connect_Database()
+
+    try:
+
+        # Read JSON file
+        emails = Logic_Read_AI_JSON(file_name)
+
+        # Insert Emails and AI analysis into SQL
+        Logic_Save_Emails_To_SQL(db, emails)
+
+        db.commit()
+
+        # Export Emails table to complaint.json
+        Logic_Export_Emails_To_JSON(db)
+
+        print("Incoming JSON processed successfully.")
+        return True
+
+    except Exception as error:
+        db.rollback()
+        print("Error processing incoming JSON:", error)
+        return False
+
+    finally:
+        db.close()
+
+#======================================================================================================
 
 
 # Connect to database 'complain.db"
@@ -138,7 +287,7 @@ def Logic_Display_Complaints(table_name, complaints):
 # Main function applications for table 'tech_professional' & 'Admin' in 'complaint.db'
 
 
-def Logic_Main():
+def Logic_Class_Main():
 
     db = Logic_Connect_Database()
 
@@ -164,6 +313,14 @@ def Logic_Main():
     finally:
         db.close()
 
-if __name__ == "__main__":
-    Logic_Main()
 
+def Logic_Main(file_name):
+
+    # Step 1: Process incoming AI JSON
+    if Logic_Process_Incoming_JSON(file_name):
+
+        # Step 2: Run original Logic Manager functions
+        Logic_Class_Main()
+
+    else:
+        print("JSON processing failed. Logic Manager stopped.")
