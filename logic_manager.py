@@ -1,19 +1,20 @@
 from sqlite3 import connect
+from data_manager import *
 from datetime import datetime, timedelta
 import json
 import os
 
 
 
-# def Logic_Create_Email_List(email, subject, content):
+def Logic_Create_Email_List(email, subject, content):
 
-#     email_list = [{
-#         "Email": email,
-#         "Subject": subject,
-#         "Content": content
-#     }]
+    email_list = [{
+        "Email": email,
+        "Subject": subject,
+        "Content": content
+    }]
 
-#     save_to_JSON(email_list)
+    save_to_JSON(email_list)
 
 
 
@@ -214,7 +215,8 @@ def Logic_Update_Priority(db, table_name):
     """)
 
     complaint_data = c.fetchall()
-
+    print(complaint_data)
+    print("2")
     for complaint_id, Priority, date in complaint_data:
 
         date_created = datetime.fromisoformat(date)

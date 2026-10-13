@@ -5,7 +5,7 @@ from ai_manager import analyse_complaint
 #log to store summary of what happened
 log = []
 #emailPass to store email and password
-emailPass = ["", ""]
+emailPass = ["a@b.com", "1111!!!!bbbbBBBB"]
 
 #inititalize the Program
 def initialize():
@@ -95,7 +95,7 @@ def inputComplaint():
         # added to log to display summary at the end
         summary("Update", "AI_manager is analyzing whether complaint is valid")
         print("AI is starting its analysis")
-        AI_result = analyse_complaint(subject, complaint)   #call analyze complaint with the arguments: subject and complaints
+        AI_result = analyse_complaint(emailPass[0],subject, complaint)   #call analyze complaint with the arguments: subject and complaints
         print("AI analysis ended")
         # if priority score is more than 0 and less than 9
         if(0 < AI_result[1] < 9):

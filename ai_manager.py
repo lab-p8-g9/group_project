@@ -1,5 +1,3 @@
-
-
 import os
 import logging
 import re
@@ -7,6 +5,9 @@ import json
 from pygarble import EnsembleDetector #pip install pygarble
 from dotenv import load_dotenv #pip install python-dotenv
 from openai import OpenAI #pip install openai
+from logic_manager import Logic_Main, Logic_Create_Email_List
+
+
 
 load_dotenv()
 
@@ -18,40 +19,13 @@ client = OpenAI(
 )
 
 
-DB_FILE = "complaints_database.json"   
-
-def save_to_json(email: str, subject: str, content: str, priority_score: int, assigned_to: str, category: str):
-    new_record = {
-        "email_address": email,
-        "subject": subject,
-        "content": content,
-        "priority_score": priority_score,
-        "assigned_to": assigned_to,
-        "category": category
-    }
-
-    records = []
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, 'r') as file:
-                records = json.load(file)
-        except (json.JSONDecodeError, IOError):
-            logging.warning("Database file missing or corrupted. Creating a new one.")
-            records = []
-
-    records.append(new_record)
-
-    try:
-        with open(DB_FILE, 'w') as file:
-            json.dump(records, file, indent=4) 
-    except IOError as e:
-        logging.error(f"Failed to save data: {e}")
-
 def validate_response_schema(response_dict: dict) -> bool:
-    if not isinstance(response_dict, dict): return False
+    if not isinstance(response_dict, dict): 
+        return False
     
     required_keys = {"category", "priority_score", "reasoning"}
-    if not required_keys.issubset(response_dict.keys()): return False
+    if not required_keys.issubset(response_dict.keys()): 
+        return False
 
     valid_categories = [
         "Security and Fraud", "Billing and Payment", "Technical Support",
@@ -61,19 +35,24 @@ def validate_response_schema(response_dict: dict) -> bool:
     if response_dict["category"] not in valid_categories: 
         return False
         
-    if not isinstance(response_dict["priority_score"], int): return False
-    if not (0 <= response_dict["priority_score"] <= 8): return False
-    if not isinstance(response_dict["reasoning"], str): return False
+    if not isinstance(response_dict["priority_score"], int): 
+        return False
+    if not (0 <= response_dict["priority_score"] <= 8): 
+        return False
+    if not isinstance(response_dict["reasoning"], str): 
+        return False
 
     return True
 
-def analyse_complaint(subject: str, user_complaint: str, max_retries: int = 3) -> list:
+def analyse_complaint(email, subject: str, user_complaint: str, max_retries: int = 3) -> list:
+    email_list = []
+
     prompt = f"SUBJECT: {subject}\nBODY: {user_complaint}"
     
     for attempt in range(max_retries): # to reject or retry on malformed AI output
         try:
             completion = client.chat.completions.create(
-                model="nvidia/nemotron-3-ultra-550b-a55b:free", #Can change llm model here eg. openrouter/free or nvidia/nemotron-3-ultra-550b-a55b:free
+                model="openrouter/free", #Can change llm model here eg. openrouter/free or nvidia/nemotron-3-ultra-550b-a55b:free
                 messages=[
                     {
                         "role": "system",
@@ -103,29 +82,39 @@ def analyse_complaint(subject: str, user_complaint: str, max_retries: int = 3) -
                 
             raw_response_str = message_content.strip()
 
-            # if raw_response_str.startswith("```json"):
-            #     raw_response_str = raw_response_str[7:]
-            # elif raw_response_str.startswith("```"):
-            #     raw_response_str = raw_response_str[3:]
+            if raw_response_str.startswith("```json"):
+                raw_response_str = raw_response_str[7:]
+            elif raw_response_str.startswith("```"):
+                raw_response_str = raw_response_str[3:]
                 
-            # if raw_response_str.endswith("```"):
-            #     raw_response_str = raw_response_str[:-3]
+            if raw_response_str.endswith("```"):
+                raw_response_str = raw_response_str[:-3]
                 
-            # raw_response_str = raw_response_str.strip()
+            raw_response_str = raw_response_str.strip()
 
             ai_dictionary = json.loads(raw_response_str)
 
             if not validate_response_schema(ai_dictionary):
                 logging.warning(f"Malformed output schema on attempt {attempt + 1}. Retrying...")
                 continue 
-
+            
             ai_list = [
                 ai_dictionary["category"],          #order of analysis list
                 ai_dictionary["priority_score"], 
                 ai_dictionary["reasoning"]       
             ]
-            
+
+            print(ai_list)
+
+            if 0 < ai_list[1] < 9:
+                email_list.append(email)
+                email_list.append(subject)
+                email_list.append(user_complaint)
+                
+
+                Logic_Create_Email_List(email_list)
             return ai_list
+            
 
         except json.JSONDecodeError:
             logging.warning(f"Failed to parse JSON on attempt {attempt + 1}. Retrying...")
@@ -134,7 +123,7 @@ def analyse_complaint(subject: str, user_complaint: str, max_retries: int = 3) -
             logging.error(f"AI Model failed/unreachable. Error: {e}.")
             return None
             
-    return None
+    #return None
 
 def fallback_rule_analysis(subject: str, user_complaint: str) -> list:
     full_text = f"{subject} {user_complaint}".lower()
@@ -206,11 +195,78 @@ def process_and_save_complaint(email: str, subject: str, body: str):
         print(f"Success! Saved to JSON. Assigned to: {assigned_to}. Priority: {priority_score} Reasoning: {reasoning}")
         print(analysis)
 
+def complaint_from_json(file_name: str = "complaint.json"):
+    try:
+        with open(file_name, "r") as file:
+            data = json.load(file)
+            
+        # 2. Extract the list of emails
+        email_list = data.get("emails", [])
+        
+        if not email_list:
+            print(f"No emails found in {input_filename}.")
+            return 
+            
+        # 3. Loop through the list and process each email
+        for index, record in enumerate(email_list, 1):
+            print(f"\n--- Processing Email {index} ---")
+            
+            # Extract the exact fields (trusting the other managers validated them)
+            user_email = record["Email"]
+            user_subject = record["Subject"]
+            user_body = record["Content"]
+            
+            # Feed the data into your Logic/Orchestrator layer
+            process_and_save_complaint(
+                email=user_email, 
+                subject=user_subject, 
+                body=user_body
+            )
 
-if __name__ == "__main__":
-    test_email = input("Enter email address: ")
-    test_subject = input("Enter subject: ")
-    test_body = input("Enter content: ")
+    except FileNotFoundError:
+        print("Error: The file was not found.")
+    except json.JSONDecodeError:
+        print("Error: not a valid JSON file.")
+    except KeyError as e:
+        print(f"Error: Missing expected data field {e} in the JSON file.")
+
+DB_FILE = "complaints_database.json"   #output json
+
+def save_to_json(email: str, subject: str, content: str, category: str, priority_score: int, assigned_to: str):
+    new_record = {
+        "email_address": email,
+        "subject": subject,
+        "content": content,
+        "category": category,
+        "priority_score": priority_score,
+        "assigned_to": assigned_to
+    }
+
+    records = []
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, 'r') as file:
+                records = json.load(file)
+        except (json.JSONDecodeError, IOError):
+            logging.warning("Database file missing or corrupted. Creating a new one.")
+            records = []
+
+    records.append(new_record)
+
+    try:
+        with open(DB_FILE, 'w') as file:
+            json.dump(records, file, indent=4) 
+    except IOError as e:
+        logging.error(f"Failed to save data: {e}")
+
+#if __name__ == "__main__":
+
+
 
     # Fixed the function call to match the required arguments
-    process_and_save_complaint(test_email, test_subject, test_body)
+    # process_and_save_complaint(test_email, test_subject, test_body)
+    
+
+# structured output json
+
+# email, subject, complain, (category, priority score, assigned_to) append this to complain.json
