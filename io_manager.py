@@ -1,12 +1,19 @@
-# importing external libraries
-from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for
+#import external functions from the data_manger and ai_manager
+from data_manager import save_to_SQL, load_from_SQL
 from ai_manager import analyse_complaint
-from data_manager import save_to_SQL, check_email_in_accounts, load_from_SQL, load_from_JSON
-app = Flask(__name__)
+
+#log to store summary of what happened
+log = []
+#emailPass to store email and password
+emailPass = ["", ""]
+
+#inititalize the Program
+def initialize():
+    print("---------------------------------")
+    print("Welcome to AI Complaint Classifier")
+    print("---------------------------------")
 
 # collect summary of what happened in the I/O Manager
-log = []
 def summary(updates,actions=""):
     if(updates == "Update"):
         log.append(actions)
@@ -20,14 +27,17 @@ def summary(updates,actions=""):
 # Validate that the input format is correct
 def validate_user_input(email, password):
 
+    if (not email or '@' not in email) and (not password or len(password) < 12 or not any(char.isdigit() for char in password) or not any(char.isupper() for char in password) or not any(char.islower() for char in password) or not any(char in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/`~" for char in password)):
+        summary("Update", "Invalid email and password")
+        return "Error: User enter an invalid email and password(min. 12 characters, 1 symbol, 1 number, 1 uppercase, 1 lowercase)"
     # Validate email format
-    if not email or '@' not in email:
+    elif not email or '@' not in email:
         # added to log to display summary at the end
-        summary("Update", "User entered a invalid email")
+        summary("Update", "User entered an invalid email")
         return "Error: Invalid email format."
 
     # Validate password complexity, must contain at least 12 character, 1 uppercase and lowercase, 1 symbol and number
-    if (not password or len(password) < 12 or not any(char.isdigit() for char in password) or not any(char.isupper() for char in password) or not any(char.islower() for char in password) or not any(char in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/`~" for char in password)):
+    elif (not password or len(password) < 12 or not any(char.isdigit() for char in password) or not any(char.isupper() for char in password) or not any(char.islower() for char in password) or not any(char in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/`~" for char in password)):
         # added to log to display summary at the end
         summary("Update", "User enter a invalid password")
         return ("Error: Password must be at least 12 characters long and include at least one number, "
@@ -35,122 +45,112 @@ def validate_user_input(email, password):
 
     return "Valid input."
 
-# function for repetitive alertBoxes
-def alertBox(msg):
-    return f"<script> alert('{msg}'); window.history.back();</script>"
-
-# Declare starting page as 127.0.0.1:8080 using load.html as the template
-@app.route('/')
-def home():
-    # on initialization load data from Admin_Team and Tech_Professionals Data and display them in a table
-    admins = load_from_SQL("Admin_Team")
-    techPro = load_from_SQL("Tech_Professionals")
-    return render_template('load.html', items_list = admins, items_list2 = techPro)
-
-# Head to 127.0.0.1:8080/json page using json.html as its template
-@app.route("/json")
-def loadJSON():
-    # load data from complaints.json file and display in a table
-    json_data = load_from_JSON()
-    return render_template('json.html', data = json_data)
-
-# Head to 127.0.0.1:8080/Account page using the account.html as template
-@app.route("/Account")
-def accountPage():
-    return render_template('account.html')
-
-# function for user to login/signup 
-@app.route("/createAccount", methods=['POST'])
-def createAccount():
-    # email and password received from html form
-    user_email = request.form.get('user_email')
-    password = request.form.get('user_password')
-    # if user typed an invalid email and password, user will be prompted to retype a valid one
-    if(validate_user_input(user_email, password).strip() != "Valid input."):
-        print(validate_user_input(user_email, password))
-        return (f"""<script>
-                       alert("{validate_user_input(user_email, password)}");
-                       window.history.back();
-                    </script>
-                    """)
-    # if user typed in a valid email and password
-    else:
-        # added to log to display summary at the end
-        summary("Update", "User entered a valid email and password and is redirected to complaint page")
-        userList = [user_email, password]
-        print(userList)
-        # call save_to_SQL function in data_manager.py and send userList which contains
-        # email and password
-        if(save_to_SQL("Accounts", userList) == True):
-            print("Login/Account Created")
-            print("Redirecting to email complaint page")
-            # bring user to 127.0.0.1:8080/email page that uses email.html as template
-            return redirect(url_for('emailPage'))
-        # if user tries to type in an email that already exists but used wrong password
-        else:
+#function for user to login/ create account
+def Account():
+    # while True, try to input an email and password that exists or a valid new one then save to SQL
+    while True:
+        try:
+            #request for user to input email and password
+            email = input("Please input your email here: ")
+            password = input("Please input your password: ")
+            #call the validation input function
+            validation = validate_user_input(email, password)
+            #store the inputted email and password to the emailPass list
+            emailPass[0] = email
+            emailPass[1] = password
+            #if user inputted an email or password or both in the wrong format
+            if(validation != "Valid input."):
             # added to log to display summary at the end
-            summary("Update", "User inputted an account that already exists")
-            print("Account already exists")
-            # alert user that they are trying to create an account that already exists
-            return(alertBox("Account already exists"))
-        
-# Head to 127.0.0.1:8080/email page using the email.html as template
-@app.route('/email')
-def emailPage():
-    return render_template('email.html')
-
-# function for user to submit their complaint
-@app.route('/submitComplaint', methods=['POST'])
-def submit():
-    # 'user_email' matches the 'name' attribute of the email input field in email.html
-    # email address, subject of email and complaint of email from html form
-    user_email = request.form.get('user_email')
-    subject = request.form.get('subject')
-    user_complaint = request.form.get('user_complaint')
-    # added to log to display summary at the end
-    summary("Update", "User has entered, his complaint")
-
-    print(f"\nThe user email is {user_email}\n")
-    print(f"Subject of email is {subject}\n")
-    print(f"Complaint: {user_complaint}\n")
-    # if user is trying to use an email that doesn't exist in the database
-    if(check_email_in_accounts(user_email) == False):
+                summary("Update", validation)
+                raise ValueError(validation)    #raise the output from validation into ValueError
+            else:
+                result = save_to_SQL("Accounts", emailPass)
+                #if user tries to input an email with the wrong password or 
+                # trying to create new account with existing email
+                if result == "User already exists":
+                    # added to log to display summary at the end
+                    summary("Update", "Email already in Use")
+                    raise ValueError(result)    #raise the output from result if it gave an error into ValueError    
+        #fall into except if ValueError
+        except ValueError as e:
+            print(e)    #print the value in ValueError
+            continue    #go to next iteration
+        else:   #else if user enter everything right
+            # added to log to display summary at the end
+            summary("Update", "User created new account/ login successfule")
+            print("Account successfully created/ Login Successful\n")
+            break   #escape the loop
+            
+#function to let user input their complaints to be verified by the AI
+def inputComplaint():
+    #if user tried to issue complain before inputting a valid account details
+    if (emailPass[0] == "" or emailPass[1] == ""):
         # added to log to display summary at the end
-        summary("Update", "User needs to re-enter an existing email")
-        print("Please input an email that exists")
-        # alert user that they are trying to complaint with an email that doesn't exist
-        return(alertBox("Email does not exist in the database"))
-    # else if email exists
-    elif(check_email_in_accounts(user_email) == True):
+        summary("Update", "User tried to send complaint without login")
+        print("Please Login first\n")
+    else:   # else if user already login
+        #collect user's complaint to be send to AI to analyze
+        subject = input("Please type subject of your email: ")
+        complaint = input("Please type your complaint: ")
         # added to log to display summary at the end
-        summary("Update", "User's email is valid, complaint is being assessed by AI now")
+        summary("Update", "AI_manager is analyzing whether complaint is valid")
         print("AI is starting its analysis")
-        # call the analyse_complaint function in AI_Manager taking subject of email and user's complaint
-        result = analyse_complaint(subject, user_complaint)
-        # if priority score more than 0 and less than 9
-        if (0 < result.priority_score < 9):
-            now = datetime.now()
-            currentTime = now.strftime("%Y-%m-%d %H:%M:%S")
-            complaintList = [user_email, subject, user_complaint, currentTime]
+        AI_result = analyse_complaint(subject, complaint)   #call analyze complaint with the arguments: subject and complaints
+        print("AI analysis ended")
+        # if priority score is more than 0 and less than 9
+        if(0 < AI_result[1] < 9):
             # added to log to display summary at the end
-            summary("Update", f"Complaint is valid with a priority score of {result.priority_score} with the category: {result.category}")
-            print(complaintList)
-            # save the complaintList that contains the userInput and datetime to Emails table using save_to_SQL function
-            save_to_SQL("Emails", complaintList)
-            # reach end of program fetch summary of all the things that happened
-            summary("Fetch")
-            return f"<h3>Complaint Successful!</h3><a href='/'>Go Back</a>"
-        # else if priority score equals to 0
-        elif (result.priority_score == 0):
+            summary("Update", "User complaint sent successfully")
+            print("Not spam")
+        # else if priority score is 0 meaning it is a spam/invalid complaint
+        elif(AI_result[1] == 0):
             # added to log to display summary at the end
-            summary("Update", "User entered an invalid complaint, please try again")
-            print("Invalid complaint or Spam")
-            return(alertBox("Invalid complaint or Spam"))
+            summary("Update", "Complaint is invalid/spam")
+            print("Invalid Complaint or Spam")
+#function to load either the Admin_Team table or Tech_Professionals table
+def loadSQL():
+    while True:
+        #take user input either 1 or 2 only
+        tables = int(input("Choose which table to load(Admin (1) or Tech (2)): "))
+        match tables:
+            # if user input 1, display Admin_Team
+            case 1:
+                # added to log to display summary at the end
+                summary("Update", "Loaded data from Admin_Team in SQL")
+                result = load_from_SQL("Admin_Team")
+                print("\n")
+                for complaint in result:
+                    # 1. Unpack the columns for the current row
+                    complaint_id, category, priorityScore, date, deadline = complaint[:5]
+                    print(f"ComplaintID: {complaint_id}\nCategory: {category}\nPriority Score: {priorityScore}")
+                    print(f"Datetime: {date}\nDeadline: {deadline}")
+                    print("-" * 20 + "\n")
+                break
+            # if user input 2, display Tech_Professionals
+            case 2:
+                # added to log to display summary at the end
+                summary("Update", "Loaded data from Tech_Professionals in SQL")
+                load_from_SQL("Tech_Professionals")
+                print("\n")
+                for complaint in result:
+                    # 1. Unpack the columns for the current row
+                    complaint_id, category, priorityScore, date, deadline = complaint[:5]
+                    print(f"ComplaintID: {complaint_id}\nCategory: {category}\nPriority Score: {priorityScore}")
+                    print(f"Datetime: {date}\nDeadline: {deadline}")
+                    print("-" * 20 + "\n")
+                break
+            # if user input anything other then 1 or 2
+            case _:
+                summary("Update", "User input is invalid")
+                print("invalid input. Try 1 or 2.")
+                tables = int(input("Choose which table to load(Admin (1) or Tech (2)): "))
 
-    
-if __name__ == '__main__':
-    # FIXED: Added host="0.0.0.0" and changed port to 8080
-    app.run(host="127.0.0.1", port=8080, debug=True)
-
-
-    #validate if email already exists in the database
+def Menu():
+    print("Below are your options(1,2,3,4,5):")
+    print("Option 1: Login/Create Account")
+    print("Option 2: Input Complaint")
+    print("Option 3: Load SQL")
+    print("Option 4: Fetch Summary Log")
+    print("Option 5: End the program")
+    options = int(input("Please input your option here: "))
+    return options
