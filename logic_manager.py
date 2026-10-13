@@ -18,7 +18,6 @@ def Logic_Create_Email_List(email, subject, content):
 
 
 
-
 # STEP 1: READ INCOMING AI JSON FILE
 
 def Logic_Read_AI_JSON(file_name):
@@ -26,8 +25,7 @@ def Logic_Read_AI_JSON(file_name):
     with open(file_name, "r", encoding="utf-8") as file:
         data = json.load(file)
 
-    return data["emails"]
-
+    return data
 
 
 # STEP 2: SAVE EMAILS INTO SQL
@@ -81,7 +79,7 @@ def Logic_Save_AI_Analysis_To_SQL(db, email_data, complaint_id):
 
     category = email_data["category"]
     priority_score = email_data["priority_score"]
-    assigned_to = email_data["assign_to"]
+    assigned_to = email_data["assigned_to"]
 
     c.execute("""
         INSERT INTO AI_Complaint_Analysis
