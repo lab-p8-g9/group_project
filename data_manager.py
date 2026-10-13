@@ -90,7 +90,7 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
             
     elif table_name == 'AI_Complaint_Analysis': #4 data
         try:
-            c.execute('''INSERT INTO AI_Complaint_Analysis VALUES(?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
+            c.execute('''INSERT INTO AI_Complaint_Analysis VALUES(?, ?, ?, ?)''', (None, list_of_data[0], list_of_data[1], list_of_data[2]))
         except (Error, IndexError, TypeError) as e:
             print('Failed to insert:', e)
             db.rollback()
