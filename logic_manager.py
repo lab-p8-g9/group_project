@@ -1,20 +1,19 @@
 from sqlite3 import connect
 from datetime import datetime, timedelta
-from data_manager import *
 import json
 import os
 
 
 
-def Logic_Create_Email_List(email, subject, content):
+# def Logic_Create_Email_List(email, subject, content):
 
-    email_list = [{
-        "Email": email,
-        "Subject": subject,
-        "Content": content
-    }]
+#     email_list = [{
+#         "Email": email,
+#         "Subject": subject,
+#         "Content": content
+#     }]
 
-    save_to_JSON(email_list)
+#     save_to_JSON(email_list)
 
 
 
@@ -303,5 +302,6 @@ def Logic_Main(file_name):
 
     else:
         print("JSON processing failed. Logic Manager stopped.")
+
 
 
