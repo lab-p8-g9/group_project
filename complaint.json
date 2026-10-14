@@ -1,0 +1,17 @@
+[
+    {
+        "Email": "sally@yahoo.com",
+        "Subject": "Faulty Product",
+        "Content": "I received a broken keyboard"
+    },
+    {
+        "Email": "john@gmail.com",
+        "Subject": "Virus Installed",
+        "Content": "I accidentally downloaded a virus and I need help resolving it."
+    },
+    {
+        "Email": "sally@yahoo.com",
+        "Subject": "Faulty Product",
+        "Content": "I received a broken keyboard"
+    }
+]

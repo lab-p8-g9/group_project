@@ -49,7 +49,12 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
 
     if table_name == 'Accounts': #2 data
         try: 
-            c.execute('''INSERT INTO Accounts VALUES(?, ?)''', (list_of_data[0], list_of_data[1]))
+            if isinstance(list_of_data, list) and len(list_of_data) == 2:
+                c.execute('''INSERT INTO Accounts VALUES(?, ?)''', (list_of_data[0], list_of_data[1]))
+            else:
+                print('Invalid input data.')
+                db.close()
+                return False
         except IntegrityError as e:
             db.rollback()
 
@@ -60,16 +65,21 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
                 if (result[0] == 1):
                     return True
                 else:
-                    return "User already exists" 
+                    print('User already exists.')
+                    return False 
 
             print("Database error:", e)
             db.close()
             return False
                     
-    elif table_name == 'Emails': #5 data, save to json backup as well
+    elif table_name == 'Emails': #1+4 data
         try:
-            c.execute('''INSERT INTO Emails VALUES(?, ?, ?, ?, ?)''', (None, list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
-
+            if isinstance(list_of_data, list) and len(list_of_data) == 4:
+                c.execute('''INSERT INTO Emails VALUES(?, ?, ?, ?, ?)''', (None, list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
+            else:
+                print('Invalid input data.')
+                db.close()
+                return False
         except (Error, IndexError, TypeError) as e:
             print('Failed to insert:', e)
             db.rollback()
@@ -78,7 +88,12 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
             
     elif table_name == 'AI_Complaint_Analysis': #4 data
         try:
-            c.execute('''INSERT INTO AI_Complaint_Analysis VALUES(?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
+            if isinstance(list_of_data, list) and len(list_of_data) == 4:
+                c.execute('''INSERT INTO AI_Complaint_Analysis VALUES(?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3]))
+            else:
+                print('Invalid input data.')
+                db.close()
+                return False
         except (Error, IndexError, TypeError) as e:
             print('Failed to insert:', e)
             db.rollback()
@@ -87,7 +102,12 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
 
     elif table_name == 'Admin_Team': #6 data
         try:
-            c.execute('''INSERT INTO Admin_Team VALUES(?, ?, ?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4], list_of_data[5]))
+            if isinstance(list_of_data, list) and len(list_of_data) == 6:
+                c.execute('''INSERT INTO Admin_Team VALUES(?, ?, ?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4], list_of_data[5]))
+            else:
+                print('Invalid input data.')
+                db.close()
+                return False        
         except (Error, IndexError, TypeError) as e:
             print('Failed to insert:', e)
             db.rollback()
@@ -96,7 +116,12 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
 
     elif table_name == 'Tech_Professionals': #6 data
         try:
-            c.execute('''INSERT INTO Tech_Professionals VALUES(?, ?, ?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4], list_of_data[5]))
+            if isinstance(list_of_data, list) and len(list_of_data) == 6:
+                c.execute('''INSERT INTO Tech_Professionals VALUES(?, ?, ?, ?, ?, ?)''', (list_of_data[0], list_of_data[1], list_of_data[2], list_of_data[3], list_of_data[4], list_of_data[5]))
+            else:
+                print('Invalid input data.')
+                db.close()
+                return False
         except (Error, IndexError, TypeError) as e:
             print('Failed to insert:', e)
             db.rollback()
@@ -110,7 +135,7 @@ def save_to_SQL(table_name, list_of_data): #SQL is our main database
 
     db.commit()
     db.close()
-    print('SQL database successfully updated!')
+    print(table_name + ' table successfully updated!')
     return True
 
 def load_from_SQL(table_name):
@@ -130,37 +155,39 @@ def load_from_SQL(table_name):
     result = c.fetchall()
 
     db.close()
-    return result
+    print(result)
+    return True
 
 def save_to_JSON(complaint): #can handle one dict or list of dict
     try:
         complaints = load_from_JSON()
 
         if complaints is None:
-            print("JSON backup not updated.")
+            print('JSON file cannot be loaded.')
             return False
 
-        if isinstance(complaint, list):
-            if not all(isinstance(item, dict) for item in complaint):
-                print("Invalid complaint data.")
-                return False
-
-            complaints.extend(complaint)
-
-        elif isinstance(complaint, dict):
+        if isinstance(complaint, dict):
             complaints.append(complaint)
 
+        elif isinstance(complaint, list):
+            for item in complaint:
+                if not isinstance(item, dict):
+                    print('Invalid complaint data.')
+                    return False
+                complaints.append(item)
+
         else:
-            print("Invalid complaint data.")
+            print('Invalid complaint data.')
             return False
 
-        with open('complaint.json', 'w') as f:
-            json.dump(complaints, f, indent=4)
+        with open('complaint.json', 'w') as file:
+            json.dump(complaints, file, indent=4)
 
+        print('Complaint successfully added to JSON file.')
         return True
 
     except (OSError, TypeError, ValueError) as e:
-        print("Error saving JSON file:", e)
+        print('Error saving JSON file: ', e)
         return False
     
 def load_from_JSON():
