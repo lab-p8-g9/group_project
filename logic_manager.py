@@ -255,12 +255,12 @@ def Logic_Sort_Complaints(db, table_name):
 
 # Display sorted complaints for test only
 
-def Logic_Display_Complaints(table_name, complaints):
+# def Logic_Display_Complaints(table_name, complaints):
 
-    print(f"\n{table_name} Complaints:")
+#     print(f"\n{table_name} Complaints:")
 
-    for complaint in complaints:
-        print(complaint)
+#     for complaint in complaints:
+#         print(complaint)
 
 
 # Main function applications for table 'tech_professional' & 'Admin' in 'complaint.db'
