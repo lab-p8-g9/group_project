@@ -130,9 +130,9 @@ def loadSQL():
                 print("\n")
                 for complaint in result:
                     # 1. Unpack the columns for the current row
-                    complaint_id, category, priorityScore, date, deadline = complaint[:5]
-                    print(f"ComplaintID: {complaint_id}\nCategory: {category}\nPriority Score: {priorityScore}")
-                    print(f"Datetime: {date}\nDeadline: {deadline}")
+                    complaint_id, category, date, deadline, priorityScore, UpdatedScore = complaint[:6]
+                    print(f"ComplaintID: {complaint_id}\nCategory: {category}\nDatetime: {date}")
+                    print(f"Deadline: {deadline}\nPriority Score: {priorityScore}\nUpdated Score: {UpdatedScore}")
                     print("-" * 20 + "\n")
                 break
             # if user input 2, display Tech_Professionals
@@ -143,9 +143,9 @@ def loadSQL():
                 print("\n")
                 for complaint in result:
                     # 1. Unpack the columns for the current row
-                    complaint_id, category, priorityScore, date, deadline = complaint[:5]
-                    print(f"ComplaintID: {complaint_id}\nCategory: {category}\nPriority Score: {priorityScore}")
-                    print(f"Datetime: {date}\nDeadline: {deadline}")
+                    complaint_id, category, date, deadline, priorityScore, UpdatedScore = complaint[:6]
+                    print(f"ComplaintID: {complaint_id}\nCategory: {category}\nDatetime: {date}")
+                    print(f"Deadline: {deadline}\nPriority Score: {priorityScore}\nUpdated Score: {UpdatedScore}")
                     print("-" * 20 + "\n")
                 break
             # if user input anything other then 1 or 2
