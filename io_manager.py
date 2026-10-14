@@ -1,11 +1,11 @@
 #import external functions from the data_manger and ai_manager
 from data_manager import save_to_SQL, load_from_SQL, load_from_JSON
-from ai_manager import analyse_complaint
+from ai_manager import analyse_complaint, process_and_save_complaint
 
 #log to store summary of what happened
 log = []
 #emailPass to store email and password
-emailPass = ["", ""]
+emailPass = ["677667", "ywdgywdg"]
 
 #inititalize the Program
 def initialize():
@@ -103,12 +103,14 @@ def inputComplaint():
         summary("Update", "AI_manager is analyzing whether complaint is valid")
         print("AI is starting its analysis")
         AI_result = analyse_complaint(emailPass[0],subject, complaint)   #call analyze complaint with the arguments: subject and complaints
+
         print("AI analysis ended")
         # if priority score is more than 0 and less than 9
         if(0 < AI_result[1] < 9):
             # added to log to display summary at the end
             summary("Update", "User complaint sent successfully")
             print("Not spam")
+            
         # else if priority score is 0 meaning it is a spam/invalid complaint
         elif(AI_result[1] == 0):
             # added to log to display summary at the end
@@ -137,7 +139,7 @@ def loadSQL():
             case 2:
                 # added to log to display summary at the end
                 summary("Update", "Loaded data from Tech_Professionals in SQL")
-                load_from_SQL("Tech_Professionals")
+                result = load_from_SQL("Tech_Professionals")
                 print("\n")
                 for complaint in result:
                     # 1. Unpack the columns for the current row

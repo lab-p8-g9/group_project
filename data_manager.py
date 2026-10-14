@@ -156,7 +156,7 @@ def load_from_SQL(table_name):
 
     db.close()
     print(result)
-    return True
+    return result
 
 def save_to_JSON(complaint): #can handle one dict or list of dict
     try:

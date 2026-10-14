@@ -14,5 +14,9 @@ while (choices != 5):
             loadSQL()
         case 4:
             summary("Fetch")
+        case _:
+            print("\nThis is an invalid choice. Please enter a number between 1 - 5\n")
+        
     choices = Menu()
+
 summary("Fetch")

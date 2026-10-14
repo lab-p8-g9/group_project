@@ -5,10 +5,11 @@ import json
 from pygarble import EnsembleDetector #pip install pygarble
 from dotenv import load_dotenv #pip install python-dotenv
 from openai import OpenAI #pip install openai
-from logic_manager import Logic_Main, Logic_Create_Email_List
+from logic_manager import Logic_Main, Logic_Create_Email_List, Logic_Save_AI_Analysis_To_SQL, Logic_Connect_Database
 
 
 
+    
 load_dotenv()
 
 openrouter_key = os.getenv("OPENROUTER_API_KEY") #get your own api key
@@ -46,13 +47,14 @@ def validate_response_schema(response_dict: dict) -> bool:
 
 def analyse_complaint(email, subject: str, user_complaint: str, max_retries: int = 3) -> list:
     email_list = []
+    ai_list = None
 
     prompt = f"SUBJECT: {subject}\nBODY: {user_complaint}"
     
     for attempt in range(max_retries): # to reject or retry on malformed AI output
         try:
             completion = client.chat.completions.create(
-                model="openrouter/free", #Can change llm model here eg. openrouter/free or nvidia/nemotron-3-ultra-550b-a55b:free
+                model="openrouter/free",
                 messages=[
                     {
                         "role": "system",
@@ -99,31 +101,59 @@ def analyse_complaint(email, subject: str, user_complaint: str, max_retries: int
                 continue 
             
             ai_list = [
-                ai_dictionary["category"],          #order of analysis list
+                ai_dictionary["category"],          # order of analysis list
                 ai_dictionary["priority_score"], 
                 ai_dictionary["reasoning"]       
             ]
-
-            print(ai_list)
-
-            if 0 < ai_list[1] < 9:
-                email_list.append(email)
-                email_list.append(subject)
-                email_list.append(user_complaint)
-                
-
-                Logic_Create_Email_List(email_list)
-            return ai_list
-            
+            break
 
         except json.JSONDecodeError:
             logging.warning(f"Failed to parse JSON on attempt {attempt + 1}. Retrying...")
             
         except Exception as e:
             logging.error(f"AI Model failed/unreachable. Error: {e}.")
-            return None
-            
-    #return None
+            break
+
+    # Fallback if AI hits 429 rate limit or fails after retries
+    if ai_list is None:
+        print("AI processing failed. Routing to fallback rules...")
+        ai_list = fallback_rule_analysis(subject, user_complaint)
+
+
+    # Team assignment rules moved inside analyse_complaint
+    category = ai_list[0]
+    priority_score = ai_list[1]
+    reasoning = ai_list[2]
+
+    team_assignment_rules = {
+        "Technical Support": "Tech_Professionals",
+        "Billing and Payment": "Tech_Professionals",
+        "Security and Fraud": "Tech_Professionals",
+        "Refund": "Admin_Team",
+        "Product/Service Quality": "Admin_Team",
+        "Delivery & Shipping": "Admin_Team",
+        "Account": "Admin_Team",
+        "General Inquiry": "Admin_Team",
+        "Spam": "Spam"
+    }
+    assigned_to = team_assignment_rules.get(category, "Admin_Team")
+    print(assigned_to)
+
+    if 0 < priority_score < 9 and category != "Spam":
+        email_list.append(email)
+        email_list.append(subject)
+        email_list.append(user_complaint)
+
+        # 1. Save [Email, Subject, Content] to complaint.json
+        Logic_Create_Email_List(email_list[0], email_list[1], email_list[2])
+
+        # 2. Save 6 fields to ai_complaints.json & run Logic_Main(DB_FILE)
+        save_to_json(email, subject, user_complaint, category, priority_score, assigned_to)
+        print(f"Success! Saved to JSON. Assigned to: {assigned_to}. Priority: {priority_score} Reasoning: {reasoning}")
+    else:
+        print(f"Spam/Invalid detected. Not saved to database. Reasoning: {reasoning}")
+
+    return ai_list
 
 def fallback_rule_analysis(subject: str, user_complaint: str) -> list:
     full_text = f"{subject} {user_complaint}".lower()
@@ -187,15 +217,18 @@ def process_and_save_complaint(email: str, subject: str, body: str):
     }
     assigned_to = team_assignment_rules.get(category, "Admin_Team")
 
+  
+
     if priority_score == 0 or category == "Spam":
         print(f"Spam/Invalid detected. Not saved to database. Reasoning: {reasoning}")
-        print(analysis)
+  
     else:
-        save_to_json(email, subject, body, priority_score, assigned_to, category)
+        save_to_json(email, subject, body,category, priority_score, assigned_to)
+        
         print(f"Success! Saved to JSON. Assigned to: {assigned_to}. Priority: {priority_score} Reasoning: {reasoning}")
-        print(analysis)
 
 def complaint_from_json(file_name: str = "complaint.json"):
+    
     try:
         with open(file_name, "r") as file:
             data = json.load(file)
@@ -203,25 +236,41 @@ def complaint_from_json(file_name: str = "complaint.json"):
         # 2. Extract the list of emails
         email_list = data.get("emails", [])
         
+        if isinstance(data, list):
+            email_list = data
+        elif isinstance(data, dict):
+            email_list = data.get("emails", [])
+        else:
+            email_list = []
+        
         if not email_list:
-            print(f"No emails found in {input_filename}.")
+            print(f"No emails found in {file_name}.")
             return 
             
-        # 3. Loop through the list and process each email
+        # Clear complaints_database.json before batch run so Logic_Main only inserts this batch once
+        with open(DB_FILE, "w") as f:
+            json.dump([], f)
+
+        # Loop through complaint.json and classify each email with AI
         for index, record in enumerate(email_list, 1):
             print(f"\n--- Processing Email {index} ---")
-            
-            # Extract the exact fields (trusting the other managers validated them)
             user_email = record["Email"]
             user_subject = record["Subject"]
             user_body = record["Content"]
             
-            # Feed the data into your Logic/Orchestrator layer
+            # save_raw=False prevents duplicating existing emails back into complaint.json
+            # trigger_logic=False waits until all emails are in complaints_database.json
             process_and_save_complaint(
                 email=user_email, 
                 subject=user_subject, 
-                body=user_body
+                body=user_body,
+                save_raw=False,
+                trigger_logic=False
             )
+            
+        # Now send the completed complaints_database.json to Logic Manager to update SQL & sort!
+        print("\nSending AI JSON output to Logic Manager for SQL department split and sorting...")
+        Logic_Main(DB_FILE)
 
     except FileNotFoundError:
         print("Error: The file was not found.")
@@ -230,7 +279,8 @@ def complaint_from_json(file_name: str = "complaint.json"):
     except KeyError as e:
         print(f"Error: Missing expected data field {e} in the JSON file.")
 
-DB_FILE = "complaints_database.json"   #output json
+DB_FILE = "ai_complaints.json"   #output json
+
 
 def save_to_json(email: str, subject: str, content: str, category: str, priority_score: int, assigned_to: str):
     new_record = {
@@ -255,18 +305,11 @@ def save_to_json(email: str, subject: str, content: str, category: str, priority
 
     try:
         with open(DB_FILE, 'w') as file:
-            json.dump(records, file, indent=4) 
+            json.dump(records, file, indent=4)
+
+        
     except IOError as e:
         logging.error(f"Failed to save data: {e}")
 
-#if __name__ == "__main__":
+    Logic_Main(DB_FILE)    
 
-
-
-    # Fixed the function call to match the required arguments
-    # process_and_save_complaint(test_email, test_subject, test_body)
-    
-
-# structured output json
-
-# email, subject, complain, (category, priority score, assigned_to) append this to complain.json

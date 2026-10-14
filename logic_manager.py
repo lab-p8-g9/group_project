@@ -215,8 +215,7 @@ def Logic_Update_Priority(db, table_name):
     """)
 
     complaint_data = c.fetchall()
-    print(complaint_data)
-    print("2")
+
     for complaint_id, Priority, date in complaint_data:
 
         date_created = datetime.fromisoformat(date)
@@ -287,8 +286,9 @@ def Logic_Class_Main():
         tech_complaints = Logic_Sort_Complaints(db, "Tech_Professionals")
 
         # Display complaints
-        Logic_Display_Complaints("Admin_Team", admin_complaints)
-        Logic_Display_Complaints("Tech_Professionals", tech_complaints)
+        # Logic_Display_Complaints("Admin_Team", admin_complaints)
+        # Logic_Display_Complaints("Tech_Professionals", tech_complaints)
+        print("Logic manager has sucessfully executed")
 
     finally:
         db.close()
