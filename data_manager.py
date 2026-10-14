@@ -143,10 +143,11 @@ def load_from_SQL(table_name):
     c = db.cursor()
 
     if table_name == 'Admin_Team':
-        c.execute('''SELECT * FROM Admin_Team''')
-
+        c.execute('''SELECT * FROM Admin_Team ORDER BY UpdatedScore DESC;''')
+        
     elif table_name == 'Tech_Professionals':
-        c.execute('''SELECT * FROM Tech_Professionals''')
+        c.execute('''SELECT * FROM Tech_Professionals ORDER BY UpdatedScore DESC;''')
+
     else:
         db.close()
         print('Unable to load table.')
@@ -155,7 +156,6 @@ def load_from_SQL(table_name):
     result = c.fetchall()
 
     db.close()
-    print(result)
     return result
 
 def save_to_JSON(complaint): #can handle one dict or list of dict
