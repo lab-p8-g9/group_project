@@ -1,6 +1,134 @@
 from sqlite3 import connect
+from data_manager import *
 from datetime import datetime, timedelta
+import json
+import os
 
+
+
+def Logic_Create_Email_List(email, subject, content):
+
+    email_list = [{
+        "Email": email,
+        "Subject": subject,
+        "Content": content
+    }]
+
+    save_to_JSON(email_list)
+
+
+
+# STEP 1: READ INCOMING AI JSON FILE
+
+def Logic_Read_AI_JSON(file_name):
+
+    with open(file_name, "r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    return data
+
+
+# STEP 2: SAVE EMAILS INTO SQL
+
+
+def Logic_Save_Emails_To_SQL(db, emails):
+
+    c = db.cursor()
+
+    for email_data in emails:
+
+        # Get email details from JSON
+        email_address = email_data["email_address"]
+        subject = email_data["subject"]
+        content = email_data["content"]
+
+        # Generate current date and time
+        current_datetime = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        # Insert email into Emails table
+        c.execute("""
+            INSERT INTO Emails
+            (Email, Subject, Content, Datetime)
+            VALUES (?, ?, ?, ?)
+        """, (
+            email_address,
+            subject,
+            content,
+            current_datetime
+        ))
+
+        # Get ComplaintID automatically assigned by SQLite
+        complaint_id = c.lastrowid
+
+        # STEP 3: Save corresponding AI analysis
+        Logic_Save_AI_Analysis_To_SQL(
+            db,
+            email_data,
+            complaint_id
+        )
+
+
+
+# STEP 3: SAVE AI ANALYSIS INTO SQL
+
+def Logic_Save_AI_Analysis_To_SQL(db, email_data, complaint_id):
+
+    c = db.cursor()
+
+    category = email_data["category"]
+    priority_score = email_data["priority_score"]
+    assigned_to = email_data["assigned_to"]
+
+    c.execute("""
+        INSERT INTO AI_Complaint_Analysis
+        (ComplaintID, Category, PriorityScore, AssignedTo)
+        VALUES (?, ?, ?, ?)
+    """, (
+        complaint_id,
+        category,
+        priority_score,
+        assigned_to
+    ))
+
+
+
+
+# STEP 4: PROCESS INCOMING JSON
+
+def Logic_Process_Incoming_JSON(file_name):
+
+    if not os.path.exists(file_name):
+        print("AI JSON file not found.")
+        return False
+
+    db = Logic_Connect_Database()
+
+    try:
+
+        # Read JSON file
+        emails = Logic_Read_AI_JSON(file_name)
+
+        # Insert Emails and AI analysis into SQL
+        Logic_Save_Emails_To_SQL(db, emails)
+
+        db.commit()
+
+
+
+        print("Incoming JSON processed successfully.")
+        return True
+
+    except Exception as error:
+        db.rollback()
+        print("Error processing incoming JSON:", error)
+        return False
+
+    finally:
+        db.close()
+
+#======================================================================================================
 
 
 # Connect to database 'complain.db"
@@ -87,7 +215,8 @@ def Logic_Update_Priority(db, table_name):
     """)
 
     complaint_data = c.fetchall()
-
+    print(complaint_data)
+    print("2")
     for complaint_id, Priority, date in complaint_data:
 
         date_created = datetime.fromisoformat(date)
@@ -138,7 +267,7 @@ def Logic_Display_Complaints(table_name, complaints):
 # Main function applications for table 'tech_professional' & 'Admin' in 'complaint.db'
 
 
-def Logic_Main():
+def Logic_Class_Main():
 
     db = Logic_Connect_Database()
 
@@ -164,6 +293,17 @@ def Logic_Main():
     finally:
         db.close()
 
-if __name__ == "__main__":
-    Logic_Main()
+
+def Logic_Main(file_name):
+
+    # Step 1: Process incoming AI JSON
+    if Logic_Process_Incoming_JSON(file_name):
+
+        # Step 2: Run original Logic Manager functions
+        Logic_Class_Main()
+
+    else:
+        print("JSON processing failed. Logic Manager stopped.")
+
+
 
