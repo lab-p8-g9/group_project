@@ -5,7 +5,7 @@ from ai_manager import analyse_complaint, process_and_save_complaint
 #log to store summary of what happened
 log = []
 #emailPass to store email and password
-emailPass = ["677667", "ywdgywdg"]
+emailPass = ["", ""]
 
 #inititalize the Program
 def initialize():
@@ -16,7 +16,7 @@ def initialize():
     result = load_from_JSON()
     print("\n")
     for complaint in result:
-        print(f"Email: {complaint["Email"]}\nSubject: {complaint["Subject"]}\nContent: {complaint["Content"]}")
+        print(f"Email: {complaint['Email']}\nSubject: {complaint['Subject']}\nContent: {complaint['Content']}")
         print("-" * 20 + "\n")
 
 
