@@ -116,14 +116,18 @@ def analyse_complaint(email, subject: str, user_complaint: str, max_retries: int
 
     # Fallback if AI hits 429 rate limit or fails after retries
     if ai_list is None:
-        print("AI processing failed. Routing to fallback rules...")
+        print("AI processing failed, trying fallback rules.")
         ai_list = fallback_rule_analysis(subject, user_complaint)
-
+        return ai_list
 
     # Team assignment rules moved inside analyse_complaint
     category = ai_list[0]
     priority_score = ai_list[1]
     reasoning = ai_list[2]
+
+    if category == "Service Unavailable":
+        print(reasoning)
+        return ai_list
 
     team_assignment_rules = {
         "Technical Support": "Tech_Professionals",
@@ -144,10 +148,10 @@ def analyse_complaint(email, subject: str, user_complaint: str, max_retries: int
         email_list.append(subject)
         email_list.append(user_complaint)
 
-        # 1. Save [Email, Subject, Content] to complaint.json
+        #Save [Email, Subject, Content] to complaint.json
         Logic_Create_Email_List(email_list[0], email_list[1], email_list[2])
 
-        # 2. Save 6 fields to ai_complaints.json & run Logic_Main(DB_FILE)
+        #Save 6 fields to ai_complaints.json & run Logic_Main(DB_FILE)
         save_to_json(email, subject, user_complaint, category, priority_score, assigned_to)
         print(f"Success! Saved to JSON. Assigned to: {assigned_to}. Priority: {priority_score} Reasoning: {reasoning}")
     else:
@@ -165,29 +169,40 @@ def fallback_rule_analysis(subject: str, user_complaint: str) -> list:
         return ["Spam", 0, "Fallback detector triggered due to spam keywords."]
         
     if detector.predict(full_text):
-        return ["Spam", 0, "Fallback detector triggered due to high gibberish probability."]
+        return ["Spam", 0, "Fallback detector triggered due to gibberish content."]
 
-    # 2: Category Determination based on keywords
-    BILLING_KEYWORDS = ["invoice", "refund", "charge", "payment", "billing", "overcharged"]
-    TECH_KEYWORDS = ["bug", "error", "broken", "login", "crash", "system", "down"]
-    
-    if any(keyword in full_text for keyword in BILLING_KEYWORDS):
-        category = "Billing and Payment"
-    elif any(keyword in full_text for keyword in TECH_KEYWORDS):
-        category = "Technical Support"
     else:
-        category = "General Inquiry"
+        print("AI system is currently down, please try submitting your complaint at the later time.")
+        return ["Not Spam", 1, "Valid complaint but AI system is down"]
 
-    # 3: Manual Priority Scoring
-    URGENT_KEYWORDS = ["urgent", "asap", "emergency", "immediately", "critical", "lawsuit", "legal action", "breach", "system down", "outage"]
-    matched_urgent = [kw for kw in URGENT_KEYWORDS if re.search(rf"\b{kw}\b", full_text)]
+
+    # return [
+    #     "Service Unavailable", 
+    #     0, 
+    #     "Unable to check your complaint at this time as the AI service is unavailable. Your complaint was not saved—please try again later."
+    # ]
+
+    # #2: Category Determination based on keywords
+    # BILLING_KEYWORDS = ["invoice", "refund", "charge", "payment", "billing", "overcharged"]
+    # TECH_KEYWORDS = ["bug", "error", "broken", "login", "crash", "system", "down"]
     
-    if matched_urgent:
-        priority_score = 7 
-        reasoning = f"AI Offline. Priority elevated to {priority_score} due to urgency keywords."
-    else:
-        priority_score = 4 
-        reasoning = "AI Offline. Processed via standard keyword fallback rules."
+    # if any(keyword in full_text for keyword in BILLING_KEYWORDS):
+    #     category = "Billing and Payment"
+    # elif any(keyword in full_text for keyword in TECH_KEYWORDS):
+    #     category = "Technical Support"
+    # else:
+    #     category = "General Inquiry"
+
+    # # 3: Manual Priority Scoring
+    # URGENT_KEYWORDS = ["urgent", "asap", "emergency", "immediately", "critical", "lawsuit", "legal action", "breach", "system down", "outage"]
+    # matched_urgent = [kw for kw in URGENT_KEYWORDS if re.search(rf"\b{kw}\b", full_text)]
+    
+    # if matched_urgent:
+    #     priority_score = 7 
+    #     reasoning = f"AI Offline. Priority elevated to {priority_score} due to urgency keywords."
+    # else:
+    #     priority_score = 4 
+    #     reasoning = "AI Offline. Processed via standard keyword fallback rules."
 
     return [category, priority_score, reasoning]
 

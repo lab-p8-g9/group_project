@@ -217,8 +217,10 @@ def Logic_Update_Priority(db, table_name):
     complaint_data = c.fetchall()
 
     for complaint_id, Priority, date in complaint_data:
-
-        date_created = datetime.fromisoformat(date)
+        try:
+            date_created = datetime.fromisoformat(date)
+        except ValueError:
+            date_created = datetime.strptime(date, "%d-%m-%Y")
 
         new_priority, deadline_date = Logic_Deadline_Classification(
             Priority, date_created, current_date
