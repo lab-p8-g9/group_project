@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Employee Login</title>
+        <link rel="stylesheet" type="text/css" href="../static/style.css">
+    </head>
+    <body>
+        <div id="loginFormContainer">
+            <form id="loginForm" action="./Home" method="POST">
+                <label for="user_email">Email:</label>
+                <br>
+                <input placeholder="Type your email" type="email" id="user_email" name="user_email" required><br><br>
+                <label for="user_password">Password:</label>
+                <br>
+                <input placeholder="Type your password" type="password" id="user_password" name="user_password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?\x22\x27:{}|<>]).{8,}" required><br><br>
+                <button id="loginbtn" type="submit">Login</button>
+            </form>
+        </div>
+    </body>
+</html>

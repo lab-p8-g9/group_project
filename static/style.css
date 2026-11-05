@@ -1,0 +1,110 @@
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td,th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+
+#employeeLogin {
+    color: blue;
+    background-color: transparent;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+#employeeLogin:hover {
+    text-decoration: underline;
+}
+
+#loginbtn {
+    background-color: rgb(41, 166, 41);
+    margin-bottom:-2px;
+}
+
+#loginbtn:hover {
+    background-color: rgb(108, 203, 108);
+}
+
+#signupbtn {
+    background-color: rgb(36, 36, 203);
+    margin-top: -2px;
+}
+
+#signupbtn:hover {
+    background-color: rgb(108, 108, 203);
+}
+
+#loginFormContainer {
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width:300px;
+}
+
+#loginFormContainer > div > h3, #loginFormContainer > div > p {
+    text-align: center;
+    margin: 2px 0;
+}
+
+#loginFormContainer > div {
+    border-radius: 8px;
+    width:100%;
+    padding:10px;
+    background-color: white;
+  /* The first shadow layer acts as the "gap", the second creates the duplicate edge */
+    box-shadow: 
+    3px 5px 0px 3px #1a1a1a;
+}
+
+#loginForm > input {
+    height: 25px;
+    width:95%;
+    padding-left: 10px;
+}
+
+/* align button to center */
+#loginForm > button {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    width: 95%;
+    height: 35px;
+    border-radius: 8px;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.dashed-text-container {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.dashed-text-container::before,
+.dashed-text-container::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid black; /* Controls thickness, style, and color of the dashes */
+}
+
+#acctext {
+    padding: 0 15px;
+    text-align: center;
+}
+
