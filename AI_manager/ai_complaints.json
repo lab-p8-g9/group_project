@@ -1,0 +1,82 @@
+[
+    {
+        "email_address": "client@exmaple.com",
+        "subject": "Urgent: Server Down",
+        "content": "Our production server is currently down. Please investigate and resolve this issue as soon as possible.\"",
+        "priority_score": 8,
+        "assigned_to": "Tech_Professionals",
+        "category": "Technical Support"
+    },
+    {
+        "email_address": "john@seed.com",
+        "subject": "System Error 500",
+        "content": "I cannot log in to my account. It shows a server error.",
+        "category": "Technical Support",
+        "priority_score": 7,
+        "assigned_to": "Tech_Professionals"
+    },
+    {
+        "email_address": "john@seed.com",
+        "subject": "System Error 500",
+        "content": "I cannot log in to my account. It shows a server error.",
+        "category": "Technical Support",
+        "priority_score": 5,
+        "assigned_to": "Tech_Professionals"
+    },
+    {
+        "email_address": "john@seed.com",
+        "subject": "System Error 500",
+        "content": "I cannot log in to my account. It shows a server error.",
+        "category": "Technical Support",
+        "priority_score": 5,
+        "assigned_to": "Tech_Professionals"
+    },
+    {
+        "email_address": "terry@gmail.com",
+        "subject": "Website malware issue",
+        "content": "Your website seems to be hacked, it links to a hacker's webpage. Please fix.",
+        "category": "Security and Fraud",
+        "priority_score": 8,
+        "assigned_to": "Tech_Professionals"
+    },
+    {
+        "email_address": "ben@outlook.com",
+        "subject": "Request for refund",
+        "content": "The new laptop I ordered arrived damaged with screen cracks. I would like to request for a refund.",
+        "category": "Refund",
+        "priority_score": 5,
+        "assigned_to": "Admin_Team"
+    },
+    {
+        "email_address": "john@seed.com",
+        "subject": "System Error 500",
+        "content": "I cannot log in to my account. It shows a server error.",
+        "category": "Technical Support",
+        "priority_score": 8,
+        "assigned_to": "Tech_Professionals"
+    },
+    {
+        "email_address": "r@j.com",
+        "subject": "System 404 error on website",
+        "content": "I am trying to access your website but it shows this error when i try to access on various devices",
+        "category": "Technical Support",
+        "priority_score": 5,
+        "assigned_to": "Tech_Professionals"
+    },
+    {
+        "email_address": "workingemail@xyz.com",
+        "subject": "General",
+        "content": "My account got locked",
+        "category": "Account",
+        "priority_score": 7,
+        "assigned_to": "Admin_Team"
+    },
+    {
+        "email_address": "workingemail@xyz.com",
+        "subject": "General",
+        "content": "My account got locked",
+        "category": "Account",
+        "priority_score": 6,
+        "assigned_to": "Admin_Team"
+    }
+]
