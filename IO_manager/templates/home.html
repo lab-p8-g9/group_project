@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Employee Homepage</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@300..900&family=Playwrite+IT+Trad:wght@100..400&display=swap"
+          rel="stylesheet">
+</head>
+
+<body class="complaints-page">
+
+    <div id="header">
+        <span class="current-user">
+            <h4>Current User: [George@Admin.com](mailto:George@Admin.com) | Role: Admin</h4>
+        </span>
+
+        <span class="logout-container">
+            <a href="{{ url_for('home') }}">Log out</a>
+        </span>
+    </div>
+
+    <main class="complaints-main">
+        <div id="complaintTable">
+
+            <div class="complaints-heading">
+                <span>
+                    <h2>Most Urgent Complaints</h2>
+                </span>
+
+                <span class="viewComplaints-action">
+                    <form id="viewComplaint" action="./viewComplaint">
+                        <button id="complaintbtn" name="action" type="submit" value="complaint">View Complaints</button>
+                    </form>
+                </span>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Subject</th>
+                            <th>Content</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for rows in data %}
+                        <tr>
+                            <td>{{ rows.Email }}</td>
+                            <td>{{ rows.Subject }}</td>
+                            <td>{{ rows.Content }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>

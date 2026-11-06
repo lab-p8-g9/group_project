@@ -2,7 +2,7 @@
 #summary function not tested as it just used to log what happened in the other function
 from Data_manager.data_manager import load_from_SQL, save_to_SQL
 from AI_manager.ai_manager import analyse_complaint
-from IO_manager.io_manager import validate_user_input, emailPass
+from IO_manager.io_manager2 import validate_user_input, emailPass
 
 
 test_data = [

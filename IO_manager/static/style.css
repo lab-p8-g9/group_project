@@ -1,0 +1,957 @@
+/* =========================================
+   1. SHARED THEME
+   Applies only to the pages listed below.
+   ========================================= */
+
+:is(
+    .customer-login-page,
+    .employee-login-page,
+    .complaints-page,
+    .customer-home-page,
+    .email-page
+) {
+    --text-main: #29233d;
+    --text-heading: #39255d;
+    --text-body: #514761;
+    --text-muted: #82758f;
+
+    --purple: #7650cf;
+    --purple-hover: #6540bc;
+    --purple-light: #f5f1ff;
+    --purple-border: #e4d9fa;
+
+    --card-background: rgba(255, 255, 255, 0.94);
+    --card-shadow:
+        0 24px 70px rgba(71, 43, 130, 0.14),
+        0 4px 16px rgba(71, 43, 130, 0.04);
+
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100svh;
+
+    font-family: "Darker Grotesque", sans-serif;
+    font-size: 20px;
+    color: var(--text-main);
+
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            rgba(255, 255, 255, 0.55),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 85% 85%,
+            rgba(255, 211, 238, 0.8),
+            transparent 40%
+        ),
+        linear-gradient(
+            135deg,
+            #dcd5ff,
+            #eee8ff 50%,
+            #fce1f1
+        );
+}
+
+/* Box sizing */
+:is(
+    .customer-login-page,
+    .employee-login-page,
+    .complaints-page,
+    .customer-home-page,
+    .email-page
+),
+:is(
+    .customer-login-page,
+    .employee-login-page,
+    .complaints-page,
+    .customer-home-page,
+    .email-page
+) * {
+    box-sizing: border-box;
+}
+
+/* Shared keyboard focus */
+:is(
+    .customer-login-page,
+    .employee-login-page,
+    .complaints-page,
+    .customer-home-page,
+    .email-page
+) :is(button, a):focus-visible {
+    outline: 3px solid #9b7be3;
+    outline-offset: 4px;
+}
+
+
+/* =========================================
+   2. SHARED WHITE CARDS
+   ========================================= */
+
+:is(.customer-login-page, .employee-login-page) #loginFormContainer,
+.complaints-page #complaintTable,
+.customer-home-page #statusTable,
+.email-page .email-card {
+    width: 100%;
+
+    background: var(--card-background);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 28px;
+
+    box-shadow: var(--card-shadow);
+}
+
+
+/* =========================================
+   3. LOGIN PAGES
+   ========================================= */
+
+:is(.customer-login-page, .employee-login-page) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: 40px 20px;
+}
+
+:is(.customer-login-page, .employee-login-page) #loginFormContainer {
+    max-width: 430px;
+    margin: auto 0;
+    padding: 40px 36px 28px;
+}
+
+:is(.customer-login-page, .employee-login-page) .login-heading {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+:is(.customer-login-page, .employee-login-page) .welcome-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 20px;
+
+    font-size: 25px;
+    color: #7753d8;
+
+    background: #f0eaff;
+    border-radius: 18px;
+}
+
+:is(.customer-login-page, .employee-login-page) .login-heading h3 {
+    margin: 0 0 10px;
+
+    font-family: "Playwrite IT Trad", cursive;
+    font-size: 27px;
+    font-weight: 400;
+    color: var(--text-heading);
+}
+
+:is(.customer-login-page, .employee-login-page) .login-heading p {
+    margin: 0;
+
+    font-size: 21px;
+    font-weight: 500;
+    color: #777086;
+}
+
+/* Login field containers */
+:is(.customer-login-page, .employee-login-page) .input-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    min-height: 54px;
+    padding: 0 16px;
+
+    background: #faf9fd;
+    border: 1px solid #e5dfef;
+    border-radius: 12px;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+:is(.customer-login-page, .employee-login-page) .input-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 20px;
+    flex-shrink: 0;
+
+    font-size: 17px;
+    color: #9889b0;
+}
+
+:is(.customer-login-page, .employee-login-page) .input-control {
+    flex: 1;
+    min-width: 0;
+}
+
+:is(.customer-login-page, .employee-login-page) .input-control input {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    height: 52px;
+    margin: 0;
+    padding: 0;
+
+    font-family: inherit;
+    font-size: 21px;
+    font-weight: 600;
+    color: #322840;
+
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+:is(.customer-login-page, .employee-login-page) .input-control input::placeholder {
+    color: #a49aad;
+    font-weight: 500;
+    opacity: 1;
+}
+
+/* "No account?" divider */
+:is(.customer-login-page, .employee-login-page) .solid-text-container {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    margin: 22px 0;
+}
+
+:is(.customer-login-page, .employee-login-page)
+.solid-text-container::before,
+:is(.customer-login-page, .employee-login-page)
+.solid-text-container::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+
+    background: #e9e3ef;
+}
+
+:is(.customer-login-page, .employee-login-page) #acctext {
+    margin: 0;
+
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 500;
+    color: #92879e;
+
+    white-space: nowrap;
+}
+
+/* Links between login pages */
+:is(.customer-login-page, .employee-login-page) .employee-link {
+    display: block;
+    margin-top: 24px;
+
+    text-align: center;
+    text-decoration: none;
+}
+
+:is(.customer-login-page, .employee-login-page) #employeeLogin,
+.employee-login-page .customer-login-return {
+    display: inline-block;
+
+    width: auto;
+    margin: 0;
+    padding: 4px 8px;
+
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-muted);
+
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+:is(.customer-login-page, .employee-login-page)
+.employee-link:hover #employeeLogin,
+.employee-login-page .employee-link:hover .customer-login-return {
+    color: var(--purple);
+    text-decoration: underline;
+}
+
+
+/* =========================================
+   4. SHARED FORM FIELD STYLES
+   Login and email pages
+   ========================================= */
+
+:is(.customer-login-page, .employee-login-page) .form-field,
+.email-page .email-field {
+    margin-bottom: 22px;
+}
+
+:is(.customer-login-page, .employee-login-page) .form-field label,
+.email-page .email-field label {
+    display: block;
+    margin-bottom: 8px;
+
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text-body);
+}
+
+/* Shared field focus */
+:is(.customer-login-page, .employee-login-page) .input-box:focus-within,
+.email-page .email-field input:focus,
+.email-page .email-field textarea:focus {
+    outline: none;
+
+    background: #fff;
+    border-color: #8b65de;
+    box-shadow: 0 0 0 4px rgba(139, 101, 222, 0.12);
+}
+
+
+/* =========================================
+   5. SHARED PRIMARY BUTTONS
+   Login, email submit, and complaint actions
+   ========================================= */
+
+:is(.customer-login-page, .employee-login-page) #loginbtn,
+.email-page .email-card button[type="submit"],
+:is(.customer-home-page, .complaints-page) #complaintbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 52px;
+    margin: 0;
+    padding: 12px 22px;
+
+    font-family: inherit;
+    font-size: 21px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+
+    color: #fff;
+    background: var(--purple);
+    border: 1px solid transparent;
+    border-radius: 12px;
+
+    box-shadow: 0 7px 16px rgba(118, 80, 207, 0.2);
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+:is(.customer-login-page, .employee-login-page) #loginbtn,
+.email-page .email-card button[type="submit"] {
+    width: 100%;
+    margin-top: 8px;
+}
+
+:is(.customer-login-page, .employee-login-page) #loginbtn:hover,
+.email-page .email-card button[type="submit"]:hover,
+:is(.customer-home-page, .complaints-page) #complaintbtn:hover {
+    background: var(--purple-hover);
+    transform: translateY(-2px);
+
+    box-shadow: 0 10px 20px rgba(118, 80, 207, 0.25);
+}
+
+:is(.customer-login-page, .employee-login-page) #loginbtn:active,
+.email-page .email-card button[type="submit"]:active,
+:is(.customer-home-page, .complaints-page) #complaintbtn:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================
+   6. SECONDARY BUTTONS AND LOGOUT LINKS
+   ========================================= */
+
+:is(.customer-login-page, .employee-login-page) #signupbtn,
+:is(.customer-home-page, .complaints-page) #header a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 0;
+    padding: 8px 22px;
+
+    font-family: inherit;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+
+    color: var(--purple);
+    background: var(--purple-light);
+    border: 1px solid var(--purple-border);
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+:is(.customer-login-page, .employee-login-page) #signupbtn {
+    width: 100%;
+    min-height: 52px;
+    padding: 10px 18px;
+    font-size: 21px;
+}
+
+:is(.customer-home-page, .complaints-page) #header a {
+    min-height: 42px;
+    white-space: nowrap;
+}
+
+:is(.customer-login-page, .employee-login-page) #signupbtn:hover,
+:is(.customer-home-page, .complaints-page) #header a:hover {
+    background: #ece3fc;
+    transform: translateY(-1px);
+}
+
+
+/* =========================================
+   7. SHARED HOMEPAGE HEADERS
+   ========================================= */
+
+:is(.customer-home-page, .complaints-page) #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+
+    width: 100%;
+    padding: 20px 40px;
+
+    background: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid #e5ddef;
+
+    box-shadow: 0 4px 18px rgba(71, 43, 130, 0.04);
+}
+
+.customer-home-page .home-current-user,
+.complaints-page .current-user {
+    min-width: 0;
+}
+
+:is(.customer-home-page, .complaints-page) #header h4 {
+    margin: 0;
+
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-body);
+
+    overflow-wrap: anywhere;
+}
+
+.customer-home-page .home-logout,
+.complaints-page .logout-container {
+    flex-shrink: 0;
+}
+
+
+/* =========================================
+   8. SHARED TABLE PAGE LAYOUT
+   ========================================= */
+
+.customer-home-page .customer-home-main,
+.complaints-page .complaints-main {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 32px;
+}
+
+.customer-home-page #statusTable,
+.complaints-page #complaintTable {
+    padding: 32px;
+}
+
+/* Heading left, action button right */
+.customer-home-page .customer-table-heading,
+.complaints-page .complaints-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+
+    margin-bottom: 26px;
+    padding-bottom: 22px;
+
+    border-bottom: 1px solid #eee8f5;
+}
+
+.customer-home-page .customer-table-heading h2,
+.complaints-page .complaints-heading h2,
+.email-page .email-heading h1 {
+    margin: 0;
+
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.4px;
+    color: var(--text-heading);
+}
+
+.customer-home-page #sendComplaint,
+.complaints-page #viewComplaint {
+    margin: 0;
+}
+
+.customer-home-page .complaint-action,
+.complaints-page .viewComplaints-action {
+    flex-shrink: 0;
+}
+
+/* Table action button sizing */
+:is(.customer-home-page, .complaints-page) #complaintbtn {
+    min-height: 48px;
+    font-size: 20px;
+}
+
+/* Scrollable table wrappers */
+.customer-home-page .customer-table-scroll,
+.complaints-page .table-scroll {
+    width: 100%;
+    overflow-x: auto;
+
+    border: 1px solid #e9e2f1;
+    border-radius: 16px;
+}
+
+
+/* =========================================
+   9. SHARED TABLE STYLES
+   ========================================= */
+
+.customer-home-page #statusTable table,
+.complaints-page #complaintTable table {
+    width: 100%;
+    margin: 0;
+
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+
+    font-family: inherit;
+    text-align: left;
+}
+
+/* Four-column customer/recent-complaints table */
+.customer-home-page #statusTable table {
+    min-width: 760px;
+}
+
+.customer-home-page #statusTable th:nth-child(1) {
+    width: 25%;
+}
+
+.customer-home-page #statusTable th:nth-child(2) {
+    width: 23%;
+}
+
+.customer-home-page #statusTable th:nth-child(3) {
+    width: 34%;
+}
+
+.customer-home-page #statusTable th:nth-child(4) {
+    width: 18%;
+}
+
+/* Three-column urgent-complaints table */
+.complaints-page #complaintTable table {
+    min-width: 640px;
+}
+
+.complaints-page #complaintTable th:nth-child(1) {
+    width: 28%;
+}
+
+.complaints-page #complaintTable th:nth-child(2) {
+    width: 27%;
+}
+
+.complaints-page #complaintTable th:nth-child(3) {
+    width: 45%;
+}
+
+/* Table headings */
+.customer-home-page #statusTable th,
+.complaints-page #complaintTable th {
+    padding: 17px 22px;
+
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.3;
+
+    color: #67449d;
+    background: #f3eefc;
+
+    border-bottom: 1px solid #e4d9f3;
+}
+
+/* Table cells */
+.customer-home-page #statusTable td,
+.complaints-page #complaintTable td {
+    padding: 20px 22px;
+
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.4;
+    vertical-align: top;
+
+    color: var(--text-body);
+    background: #fff;
+
+    border-bottom: 1px solid #eee8f5;
+    overflow-wrap: anywhere;
+
+    transition: background-color 0.2s ease;
+}
+
+/* Email column */
+.customer-home-page #statusTable td:first-child,
+.complaints-page #complaintTable td:first-child {
+    color: var(--purple);
+    font-weight: 600;
+}
+
+/* Subject column */
+.customer-home-page #statusTable td:nth-child(2),
+.complaints-page #complaintTable td:nth-child(2) {
+    color: #392f4a;
+    font-weight: 700;
+}
+
+/* Alternating rows */
+.customer-home-page #statusTable tbody tr:nth-child(even) td,
+.complaints-page #complaintTable tbody tr:nth-child(even) td {
+    background: #fcfaff;
+}
+
+/* Row hover */
+.customer-home-page #statusTable tbody tr:hover td,
+.complaints-page #complaintTable tbody tr:hover td {
+    background: #f5f0ff;
+}
+
+/* Last row */
+.customer-home-page #statusTable tbody tr:last-child td,
+.complaints-page #complaintTable tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Status badge */
+.customer-home-page .complaint-status {
+    display: inline-block;
+
+    max-width: 100%;
+    padding: 5px 12px;
+
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+
+    color: #67449d;
+    background: #f0eaff;
+    border: 1px solid var(--purple-border);
+    border-radius: 999px;
+
+    overflow-wrap: anywhere;
+}
+
+/* Table note */
+.customer-home-page .status-note {
+    margin: 20px 0 0;
+
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+
+/* =========================================
+   10. EMAIL / SUBMIT COMPLAINT PAGE
+   ========================================= */
+
+.email-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: 48px 20px;
+}
+
+.email-page .email-card {
+    max-width: 640px;
+    margin: auto 0;
+    padding: 38px;
+}
+
+.email-page .email-heading {
+    margin-bottom: 28px;
+    padding-bottom: 22px;
+
+    border-bottom: 1px solid #eee8f5;
+}
+
+.email-page .email-card form {
+    margin: 0;
+}
+
+.email-page .email-field input,
+.email-page .email-field textarea {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 12px 16px;
+
+    font-family: inherit;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #322840;
+
+    background: #faf9fd;
+    border: 1px solid #e5dfef;
+    border-radius: 12px;
+    box-shadow: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.email-page .email-field input {
+    min-height: 54px;
+}
+
+.email-page .email-field textarea {
+    min-height: 180px;
+    resize: vertical;
+}
+
+
+/* =========================================
+   11. TABLET LAYOUT
+   ========================================= */
+
+@media (max-width: 768px) {
+    :is(.customer-home-page, .complaints-page) #header {
+        gap: 16px;
+        padding: 18px 24px;
+    }
+
+    :is(.customer-home-page, .complaints-page) #header h4 {
+        font-size: 18px;
+    }
+
+    .customer-home-page .customer-home-main,
+    .complaints-page .complaints-main {
+        padding: 32px 20px;
+    }
+
+    .customer-home-page #statusTable,
+    .complaints-page #complaintTable {
+        padding: 24px;
+        border-radius: 22px;
+    }
+
+    .customer-home-page .customer-table-heading h2,
+    .complaints-page .complaints-heading h2 {
+        font-size: 30px;
+    }
+}
+
+
+/* =========================================
+   12. MOBILE LAYOUT
+   ========================================= */
+
+@media (max-width: 480px) {
+    /* Login and email page spacing */
+    :is(.customer-login-page, .employee-login-page),
+    .email-page {
+        padding: 24px 16px;
+    }
+
+    :is(.customer-login-page, .employee-login-page) #loginFormContainer {
+        padding: 32px 24px 24px;
+        border-radius: 22px;
+    }
+
+    :is(.customer-login-page, .employee-login-page) .login-heading h3 {
+        font-size: 24px;
+    }
+
+    /* Homepage headers */
+    :is(.customer-home-page, .complaints-page) #header {
+        gap: 12px;
+        padding: 16px;
+    }
+
+    :is(.customer-home-page, .complaints-page) #header h4 {
+        font-size: 17px;
+    }
+
+    :is(.customer-home-page, .complaints-page) #header a {
+        min-height: 38px;
+        padding: 8px 14px;
+        font-size: 17px;
+    }
+
+    /* Table cards */
+    .customer-home-page .customer-home-main,
+    .complaints-page .complaints-main {
+        padding: 24px 14px;
+    }
+
+    .customer-home-page #statusTable,
+    .complaints-page #complaintTable {
+        padding: 20px 16px;
+    }
+
+    /* Stack heading and action button */
+    .customer-home-page .customer-table-heading,
+    .complaints-page .complaints-heading {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+    }
+
+    .customer-home-page .customer-table-heading h2,
+    .complaints-page .complaints-heading h2 {
+        font-size: 28px;
+    }
+
+    :is(.customer-home-page, .complaints-page) #complaintbtn {
+        width: 100%;
+    }
+
+    .customer-home-page #statusTable th,
+    .customer-home-page #statusTable td,
+    .complaints-page #complaintTable th,
+    .complaints-page #complaintTable td {
+        padding: 16px;
+        font-size: 19px;
+    }
+
+    /* Email card */
+    .email-page .email-card {
+        padding: 28px 22px;
+        border-radius: 22px;
+    }
+
+    .email-page .email-heading {
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+    }
+
+    .email-page .email-heading h1 {
+        font-size: 28px;
+    }
+
+    .email-page .email-field textarea {
+        min-height: 160px;
+    }
+}
+
+
+/* =========================================
+   13. REDUCED MOTION
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    :is(
+        .customer-login-page,
+        .employee-login-page,
+        .complaints-page,
+        .customer-home-page,
+        .email-page
+    ) * {
+        transition: none;
+    }
+}
+
+/* =========================================
+   EMAIL PAGE LOGOUT
+   ========================================= */
+
+.email-page .email-topbar {
+    display: flex;
+    justify-content: flex-end;
+
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.email-page .email-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 42px;
+    padding: 8px 22px;
+
+    font-family: inherit;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+
+    color: var(--purple);
+    background: var(--purple-light);
+    border: 1px solid var(--purple-border);
+    border-radius: 12px;
+
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.email-page .email-logout:hover {
+    background: #ece3fc;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+    .email-page .email-topbar {
+        margin-bottom: 20px;
+    }
+
+    .email-page .email-logout {
+        min-height: 38px;
+        padding: 8px 14px;
+        font-size: 17px;
+    }
+}

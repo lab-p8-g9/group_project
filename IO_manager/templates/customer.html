@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Home</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@300..900&family=Playwrite+IT+Trad:wght@100..400&display=swap"
+          rel="stylesheet">
+</head>
+
+<body class="customer-home-page">
+
+    <div id="header">
+        <span class="home-current-user">
+            <h4>Current User: [sally@yahoo.com](mailto:sally@yahoo.com) | Role: Customer</h4>
+        </span>
+
+        <span class="home-logout">
+            <a href="{{ url_for('home') }}">Log out</a>
+        </span>
+    </div>
+
+    <main class="customer-home-main">
+        <div id="statusTable">
+
+            <div class="customer-table-heading">
+                <span>
+                    <h2>Your Complaints</h2>
+                </span>
+
+                <span class="complaint-action">
+                    <form id="sendComplaint" action="./email">
+                        <button id="complaintbtn" name="action" type="submit" value="complaint">Send Complaint</button>
+                    </form>
+                </span>
+            </div>
+
+            <div class="customer-table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Subject</th>
+                            <th>Content</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for rows in data %}
+                        <tr>
+                            <td>{{ rows.Email }}</td>
+                            <td>{{ rows.Subject }}</td>
+                            <td>{{ rows.Content }}</td>
+                            <td>
+                                <span class="complaint-status">{{ rows.Status }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="status-note">Note: Resolved, Unresolved</p>
+
+        </div>
+    </main>
+
+</body>
+</html>

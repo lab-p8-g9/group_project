@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Customer Login</title>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <link rel="stylesheet" type="text/css" href="../static/style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@300..900&family=Playwrite+IT+Trad:wght@100..400&display=swap"
+          rel="stylesheet">
+</head>
+
+<body class="customer-login-page">
+    <div id="loginFormContainer">
+        <div class="login-card-content">
+
+            <div class="login-heading">
+                <div class="welcome-icon" aria-hidden="true">
+                    <i class="fa fa-user-o"></i>
+                </div>
+
+                <h3>Welcome!</h3>
+                <p>Login to your account</p>
+            </div>
+
+            <form id="loginForm" action="./Account" method="POST">
+
+                <div class="form-field">
+                    <label for="user_email">Email</label>
+
+                    <div id="inputBox" class="input-box">
+                        <span class="input-icon">
+                            <i class="fa fa-envelope" aria-hidden="true"></i>
+                        </span>
+
+                        <span class="input-control">
+                            <input placeholder="Email" type="email" id="user_email" name="user_email" required>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label for="user_password">Password</label>
+
+                    <div id="inputBox" class="input-box">
+                        <span class="input-icon">
+                            <i class="fa fa-lock" aria-hidden="true"></i>
+                        </span>
+
+                        <span class="input-control">
+                            <input placeholder="Password" type="password" id="user_password" name="user_password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?\x22\x27:{}|<>]).{8,}" required>
+                        </span>
+                    </div>
+                </div>
+
+                <button id="loginbtn" name="action" type="submit" value="login">
+                    Login
+                </button>
+
+                <div class="solid-text-container">
+                    <p id="acctext">No account?</p>
+                </div>
+
+                <button id="signupbtn" name="action" type="submit" value="signup">
+                    Sign up
+                </button>
+            </form>
+
+            <a class="employee-link" href="{{ url_for('employeeLoginPage') }}">
+                <button id="employeeLogin">Are you an employee?</button>
+            </a>
+
+        </div>
+    </div>
+</body>
+</html>
+
+</style>

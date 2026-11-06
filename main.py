@@ -1,5 +1,5 @@
 #import all functions from io_manager to main.py
-from IO_manager.io_manager import *
+from IO_manager.io_manager2 import *
 
 initialize()
 while True:

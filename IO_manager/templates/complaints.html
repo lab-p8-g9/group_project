@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Recent Complaints</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@300..900&family=Playwrite+IT+Trad:wght@100..400&display=swap"
+          rel="stylesheet">
+</head>
+
+<body class="customer-home-page">
+
+    <div id="header">
+        <span class="home-current-user">
+            <h4>Current User: George@Admin.com | Role: Admin</h4>
+        </span>
+
+        <span class="home-logout">
+            <a href="{{ url_for('home') }}">Log out</a>
+        </span>
+    </div>
+
+    <main class="customer-home-main">
+        <div id="statusTable">
+
+            <div class="customer-table-heading">
+                <span>
+                    <h2>100 Most Recent Complaints</h2>
+                </span>
+            </div>
+
+            <div class="customer-table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Subject</th>
+                            <th>Content</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for rows in data %}
+                        <tr>
+                            <td>{{ rows.Email }}</td>
+                            <td>{{ rows.Subject }}</td>
+                            <td>{{ rows.Content }}</td>
+                            <td>
+                                <span class="complaint-status">{{ rows.Status }}</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4">No complaints to display.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="status-note">
+                Showing up to 100 most recent complaints, newest first.
+            </p>
+
+        </div>
+    </main>
+
+</body>
+</html>
