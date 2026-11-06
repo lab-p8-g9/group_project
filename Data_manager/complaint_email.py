@@ -1,8 +1,7 @@
 #parent class 
 import sqlite3
 from abc import ABC, abstractmethod 
-from Data_manager.data_main import db, c
-
+from Data_manager.data_manager2 import db, c
 
 class Account:
     def __init__(self, address, password):

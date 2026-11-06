@@ -1,7 +1,7 @@
 #child class 1
-from Data_manager.data_main import *
-from complaint_email import Email
-from complaint_email import Account 
+from Data_manager.data_manager2 import db, c, refresh_top_10
+from Data_manager.complaint_email import Email
+from Data_manager.complaint_email import Account 
 from abc import ABC, abstractmethod
 
 class Tech(Email):
