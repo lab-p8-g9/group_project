@@ -1,9 +1,11 @@
 # importing external libraries
 from flask import Flask, render_template, request, redirect, url_for
-from ai_manager import analyse_complaint
-from data_manager import save_to_SQL, load_from_SQL, load_from_JSON
+from AI_manager.ai_manager import analyse_complaint
+from Data_manager.complaint_email import Account
+from Data_manager.admin_team import Admin
 app = Flask(__name__)
 
+test = Admin(1, "Bob@yahoo.com", "Screen", "Computer screen blacked out", -1980, -1980, 7, 6)
 # collect summary of what happened in the I/O Manager
 log = []
 def summary(updates,actions=""):
@@ -56,19 +58,29 @@ def employeeLoginPage():
     return render_template('employee.html')
 
 @app.route('/customer')
-def customerPage():
+def customerPage(userInfo):
+    # VELYN: Your load from sql put here
+    # customer_complaint retrieve the data from the db and put in the table
+    # for now still using your old function, so need change
     customer_complaint = load_from_SQL("Complaints")
-    return render_template('customer.html', items_list = customer_complaint)
+    return render_template('customer.html', complaints = customer_complaint, userData = userInfo)
 
 @app.route('/employee')
 def employeePage():
-    json_data = load_from_JSON()
-    return render_template('home.html', data = json_data)
+    # VELYN: Your load from JSON put here(load top 10 urgent complaints)
+    userInfo = request.args.get('userInfo')
+    print(userInfo)
+    top10Complaint = test.load_first_10()
+    return render_template('home.html', data = top10Complaint, userData = userInfo)
 
 @app.route('/viewComplaint')
 def viewComplaintPage():
     SQL_data = load_from_SQL("Complaints")
     return render_template('complaints.html', items_list = SQL_data)
+
+# -------------------------------------
+# Account Login/ Signup functions
+# -------------------------------------
 
 # Head to 127.0.0.1:8080 page using the account.html as template
 @app.route("/Account", methods=["POST"])
@@ -89,36 +101,40 @@ def accountPage():
         # if user typed in a valid email and password
         else:
             # added to log to display summary at the end
-            summary("Update", "User entered a valid email and password and is redirected to complaint page")
-            userList = [user_email, password]
-            print(userList)
-            # call save_to_SQL function in data_manager.py and send userList which contains
-            # email and password
+            summary("Update", "User entered a valid email and password and is redirected to customer Homepage")
+            # VELYN: depending on changes on your end, but for now I calling ur account class
+            # hope it is self explainatory, the print statement also says what happened
+            # for ur get_account() - please return the email and role for me
+            userList = Account(user_email, password)
             if(button_clicked == "signup"):
-                if(save_to_SQL("Accounts", userList) == True):
-                    print("Login/Account Created")
-                    print("Redirecting to email complaint page")
-                    # bring user to 127.0.0.1:8080/email page that uses email.html as template
-                    return redirect(url_for('emailPage'))
+                try:
+                    userList.set_account()
+                    print("Account Created")
+                    print("Redirecting to Customer Homepage")
+                    userData = userList.get_account()
+                    return redirect(url_for('customerPage', userInfo = userData))
                 # if user tries to type in an email that already exists but used wrong password
-                else:
-                    # added to log to display summary at the end
-                    summary("Update", "User inputted an account that already exists")
-                    print("Account already exists")
-                    # alert user that they are trying to create an account that already exists
-                    return(alertBox("Account already exists"))
+                except ValueError as err:
+                    if str(err) == "Account already exists.":
+                        summary("Update", "User inputted the wrong password")
+                        print("Incorrect Password")
+                        alertBox("Incorrect Password")
+
             elif(button_clicked == "login"):
                 #function to check if account exists in the database
-                print("account checking here")
-                return redirect(url_for('customerPage'))
+                userData = userList.get_account()
+                return redirect(url_for('customerPage', userInfo = userData))
+    # else if user is an employee, go to employee.html
     elif button_clicked == "employee":
         print("Redirecting to employee login page")
         return redirect(url_for('employeeLoginPage'))
 
+# employee login page
 @app.route('/Home', methods=["POST"])
 def employeeHomePage():
     user_email = request.form.get("user_email")
     password = request.form.get("user_password")
+
     # if user typed an invalid email and password, user will be prompted to retype a valid one
     if(validate_user_input(user_email, password).strip() != "Valid input."):
         print(validate_user_input(user_email, password))
@@ -131,16 +147,31 @@ def employeeHomePage():
     else:
         # added to log to display summary at the end
         summary("Update", "Employee entered a valid email and password and is redirected to employee home page")
-        userList = [user_email, password]
-        print(userList)
-        # call function to check if this employee account exists
-        # if(check_email_in_accounts(user_email) == "Admin"):
-        #     print("Login Successful")
-        #     print("Redirecting to Admin home page")
-        # elif(check_email_in_accounts(user_email) == "Tech"):
-        #     print("Login Successful")
-        #     print("Redirecting to Tech home page")
-        return redirect(url_for('employeePage'))
+        userList = Account(user_email, password)
+        try:
+            # VELYN: depending on changes on your end, but for now I calling ur account class
+            # hope it is self explainatory, the print statement also says what happened
+            # for ur get_account() - please return the email and role for me
+            userData = userList.get_account()
+            print(userData)
+            print("Login Successful")
+            print("Redirecting to Employee Homepage")
+            return redirect(url_for('employeePage', userInfo = userData))
+        # if user tries to type in an email that already exists but used wrong password
+        except ValueError as err:
+            if str(err) == "Account already exists.":
+                summary("Update", "User inputted an account that already exists")
+                print("Account already exists")
+                alertBox(err)
+
+# -------------------------------------
+# Send/ View Complaint function
+# -------------------------------------
+
+@app.route('/viewComplaint')
+def view():
+    # VELYN: put ur function to view all complaints for the admin/tech here
+    return redirect(url_for('viewComplaintPage'))
 
 # function for user to submit their complaint
 @app.route('/submitComplaint', methods=['POST'])
@@ -186,4 +217,4 @@ def submit():
     
 if __name__ == '__main__':
     # Added host="0.0.0.0" and changed port to 8080
-    app.run(host="127.0.0.1", port=8080, debug=True)
+    app.run(host="127.0.0.1", port=8080, debug=True, threaded=False)

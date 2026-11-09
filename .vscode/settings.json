@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./Data_manager",
+        "./AI_manager"
+    ]
+}
