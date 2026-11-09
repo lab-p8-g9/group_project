@@ -2,19 +2,24 @@ from sqlite3 import *
 import json 
 import os
 import tempfile 
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DB_PATH = BASE_DIR / "complaint.db"
 
 JSON_FILES = {
     'Admin': 'admin.json',
     'Tech': 'tech.json'
 }
 
-db = connect('complaint.db')
+db = connect('complaint.db', check_same_thread = False)
 db.execute('PRAGMA foreign_keys = ON')
 c = db.cursor()
 
 c.execute('''CREATE TABLE IF NOT EXISTS Accounts(
             Address TEXT, 
             Password TEXT,
+            Role TEXT,
             PRIMARY KEY(Address));''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS Emails(
@@ -61,76 +66,66 @@ c.execute('''CREATE TABLE IF NOT EXISTS Tech_Professionals(
             FOREIGN KEY(ComplaintID) REFERENCES Emails(ComplaintID),
             FOREIGN KEY(Address) REFERENCES Accounts(Address));''')
 
-def validate_complaint(complaint):
+def validate_complaint(complaint): #dictionary complaint
     required = [
         'ComplaintID',
         'Address',
         'Category',
         'PriorityScore',
+        'UpdatedScore',
         'Status'
     ]
 
-    for key in required:
-        if key not in complaint:
-            raise ValueError(f"Missing required field: {key}")
+    if not isinstance(complaint, dict):
+        raise TypeError("Complaint must be a dictionary.")
 
-    score = complaint['PriorityScore']
+    for field in required:
+        if field not in complaint:
+            raise ValueError(f"Missing required field: {field}")
 
-    if type(score) is not int or not 1 <= score <= 8:
-        raise ValueError("PriorityScore must be an integer from 1 to 8.")
+    for field in ("PriorityScore", "UpdatedScore"):
+        score = complaint[field]
+        if type(score) is not int or not 1 <= score <= 8:
+            raise ValueError(f"{field} must be between 1 and 8.")
 
-    if complaint['Status'] not in ('Resolved', 'Unresolved'):
+    if complaint["Status"] not in ("Resolved", "Unresolved"):
         raise ValueError("Invalid complaint status.")
-
-    if 'UpdatedScore' not in complaint:
-        raise ValueError("Missing UpdatedScore.")
-
-    updated_score = complaint['UpdatedScore']
-
-    if type(updated_score) is not int or not 1 <= updated_score <= 8:
-        raise ValueError("UpdatedScore must be between 1 and 8.")
 
     return True
 
-
 def save_to_JSON(department, complaints):
-    temp_name = None 
+    if department not in JSON_FILES:
+        raise ValueError("Invalid department.")
+
+    if not isinstance(complaints, list):
+        raise TypeError("Complaints must be a list.")
+
+    if len(complaints) > 10:
+        raise ValueError("Cannot save more than 10 complaints.")
+
+    for complaint in complaints:
+        validate_complaint(complaint)
+
+    filename = JSON_FILES[department]
+    filename.parent.mkdir(parents=True, exist_ok=True)
+    temp_name = None
 
     try:
-        if department not in JSON_FILES:
-            raise ValueError("Invalid department.")
-
-        if not isinstance(complaints, list):
-            raise TypeError("Complaints must be a list.")
-
-        if len(complaints) > 10:
-            raise ValueError("Cannot save more than 10 complaints.")
-
-        for complaint in complaints:
-            if not isinstance(complaint, dict):
-                raise TypeError("Each complaint must be a dictionary.")
-
-            validate_complaint(complaint)
-
-        filename = JSON_FILES[department]
-
         with tempfile.NamedTemporaryFile(
-            mode='w',
-            encoding='utf-8',
-            dir=os.path.dirname(os.path.abspath(filename)),
-            suffix='.tmp',
+            mode="w",
+            encoding="utf-8",
+            dir=filename.parent,
+            suffix=".tmp",
             delete=False
         ) as file:
             temp_name = file.name
             json.dump(complaints, file, indent=4)
 
         os.replace(temp_name, filename)
-
-        print(f"{filename} updated successfully.")
         return True
 
-    except (OSError, ValueError, TypeError) as e:
-        print(f"Error saving JSON: {e}")
+    except OSError as error:
+        print(f"JSON save failed: {error}")
         return False
 
     finally:
@@ -139,73 +134,63 @@ def save_to_JSON(department, complaints):
                 os.remove(temp_name)
             except FileNotFoundError:
                 pass
-            except OSError as e:
-                print(f"Warning: Could not remove temporary file: {e}")
 
-def load_from_JSON(department):
+def load_from_JSON(department): #loads from specific department - admin.json or tech.json, which already contains top 10
+    if department not in JSON_FILES:
+        raise ValueError("Invalid department.") #only allow 'Admin' or 'Tech'
+
     try:
-        if department not in JSON_FILES:
-            raise ValueError("Invalid department.")
-
-        filename = JSON_FILES[department]
-
-        with open(filename, 'r') as file:
+        with open(JSON_FILES[department], encoding="utf-8") as file:
             records = json.load(file)
 
-        if not isinstance(records, list):
-            raise ValueError("Invalid JSON format.")
+        if not isinstance(records, list) or len(records) > 10:
+            raise ValueError("Invalid JSON records.")
 
-        if len(records) > 10:
-            raise ValueError("JSON contains more than 10 complaints.")
-
-        for complaint in records:
-            if not isinstance(complaint, dict):
-                raise ValueError("Invalid complaint format.")
-
-            validate_complaint(complaint)
+        for record in records:
+            validate_complaint(record)
 
         return records
 
     except FileNotFoundError:
-        print("JSON file not found.")
         return []
 
-    except (OSError, ValueError, TypeError) as e:
-        print(f"Error loading JSON: {e}")
+    except (OSError, ValueError, TypeError) as error:
+        print(f"JSON load failed: {error}")
         return None
 
+
 def refresh_top_10(department):
+    tables = {
+        "Admin": "Admin_Team",
+        "Tech": "Tech_Professionals"
+    }
+
+    if department not in tables:
+        raise ValueError("Invalid department.")
+
+    table = tables[department]
+
     try:
-        tables = {
-            'Admin': 'Admin_Team',
-            'Tech': 'Tech_Professionals'
-        }
-
-        if department not in tables:
-            raise ValueError("Invalid department.")
-
-        table = tables[department]
-
-        c.execute(f'''
+        cursor = db.execute(f"""
             SELECT *
             FROM {table}
             WHERE Status = 'Unresolved'
             ORDER BY UpdatedScore DESC, Datetime ASC, ComplaintID ASC
             LIMIT 10
-        ''')
+        """)
 
-        columns = [column[0] for column in c.description]
-
-        complaints = [
+        columns = [column[0] for column in cursor.description]
+        records = [
             dict(zip(columns, row))
-            for row in c.fetchall()
+            for row in cursor.fetchall()
         ]
 
-        return save_to_JSON(department, complaints)
+        return save_to_JSON(department, records)
 
-    except (DatabaseError, ValueError) as e:
-        print(f"Error refreshing top 10: {e}")
+    except sqlite3.DatabaseError as error:
+        print(f"Top 10 refresh failed: {error}")
         return False
+
 
 
 ########## NO LONGER IN USE ############
