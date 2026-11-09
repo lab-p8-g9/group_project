@@ -1,7 +1,8 @@
-from sqlite3 import *
-from Data_manager.data_manager2 import db 
+import sqlite3
+from abc import ABC, abstractmethod
+from Data_manager.data_manager2 import db, c
 
-class Account:
+class Account(ABC):
     VALID_ROLES = ("Admin", "Tech", "Customer")
 
     def __init__(self, address, password):
@@ -11,9 +12,9 @@ class Account:
         if not isinstance(password, str) or not password:
             raise ValueError("Password cannot be empty.")
         
-        self._address = address
+        self._address = address.strip()
         self._pw = password
-        self._role = None 
+        self._role = self.assign_role()
 
     @property
     def address(self):
@@ -23,12 +24,16 @@ class Account:
     def role(self):
         return self._role 
 
+    @abstractmethod
+    def assign_role(self):
+        pass
+
     def set_account(self): #inserts account made into complaint.db - Accounts
         if self._role not in self.VALID_ROLES:
             raise ValueError("Invalid account role.")
 
         try:
-            db.execute(
+            c.execute(
                 """
                 INSERT INTO Accounts (Address, Password, Role)
                 VALUES (?, ?, ?)
@@ -49,8 +54,11 @@ class Account:
             raise
 
 
-    def get_account(self): #retrieves account info (address, role) from complaint.db
-        c.execute('''SELECT Address, Role FROM Accounts WHERE Address = ?''', (self.address,))
+    def get_account(self): #retrieves account info (address, pw, role) from complaint.db
+        c.execute('''SELECT *
+                    FROM Accounts 
+                    WHERE Address = ?''', 
+                    (self.address,))
         return c.fetchone()
 
     
