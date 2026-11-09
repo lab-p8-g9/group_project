@@ -24,18 +24,30 @@ class Account:
         return self._role 
 
     def set_account(self): #inserts account made into complaint.db - Accounts
-        try:
-            c.execute('''INSERT INTO Accounts Address, Password, Role)
-                        VALUES (?, ?, ?)''', (self._address, self._password, self._role))
-            db.commit()
+        if self._role not in self.VALID_ROLES:
+            raise ValueError("Invalid account role.")
 
-        except sqlite3.IntegrityError:
+        try:
+            db.execute(
+                """
+                INSERT INTO Accounts (Address, Password, Role)
+                VALUES (?, ?, ?)
+                """,
+                (self._address, self._pw, self._role)
+            )
+            db.commit()
+            return True
+
+        except sqlite3.IntegrityError as error:
             db.rollback()
-            raise ValueError("Account already exists.")
+            raise ValueError(
+                "Account already exists or violates a constraint."
+            ) from error
 
         except sqlite3.DatabaseError:
             db.rollback()
             raise
+
 
     def get_account(self): #retrieves account info (address, role) from complaint.db
         c.execute('''SELECT Address, Role FROM Accounts WHERE Address = ?''', (self.address,))
