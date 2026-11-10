@@ -228,24 +228,87 @@ def refresh_top_10(department): #for own usage
         print(f"Error refreshing top 10: {error}")
         return False
 
-#----------------- LOADING ALL CUSTOMER'S COMPLAINTS ----------------
-def load_customer_complaints(address):
-    try:
-        c.execute('''
-            SELECT *
-            FROM Emails
-            WHERE Address = ?
-            ORDER BY Datetime DESC, ComplaintID DESC
-        ''', (address,))
+#----------------- SQL OPERATIONS  ----------------
 
+def load_customer_complaints(address): #return all complaints sent by the same customer/address
+    try:
+        ans = []
+        #retrieving complaintID, address, subject, content, datetime
+        c.execute('''SELECT *
+                    FROM Emails 
+                    WHERE Address = ?
+                    ORDER BY ComplaintID DESC''', 
+                    (address,))
         complaints = c.fetchall()
 
         if not complaints:
             print("No complaints found for this customer.")
             return []
 
-        return complaints
+        for complaint in complaints:
+            cid = complaint[0]
+
+            #retrieving table 
+            c.execute('''SELECT AssignedTo
+                        FROM AI_Complaint_Analysis
+                        WHERE ComplaintID = ?''', (cid,))
+            table = c.fetchone()
+
+            #retrieving status 
+            status = "Unresolved"
+
+            if table is not None:
+                if table[0] == 'Admin':
+                    c.execute('''SELECT Status
+                                 FROM Admin_Team
+                                 WHERE ComplaintID = ?''',
+                              (cid,))
+
+                    result = c.fetchone()
+
+                    if result is not None:
+                        status = result[0]
+
+                elif table[0] == 'Tech':
+                    c.execute('''SELECT Status
+                                 FROM Tech_Professionals
+                                 WHERE ComplaintID = ?''',
+                              (cid,))
+
+                    result = c.fetchone()
+
+                    if result is not None:
+                        status = result[0]
+
+            complaint = list(complaint)
+            complaint.append(status)
+            ans.append(complaint)
+
+        return ans #return list of [complaintID, address, subject, content, datetime, status]
 
     except sqlite3.DatabaseError as error:
         print(f"Error loading customer complaints: {error}")
         return None
+
+def update_all_scores(): #updates all UNRESOLVED complaints with scores below 8 ONLY in ADMIN_TEAM and TECH_PROFESSIONALS TABLES
+    try:
+        for table in ("Admin_Team", "Tech_Professionals"):
+            c.execute(f'''UPDATE {table}
+                        SET UpdatedScore = UpdatedScore + 1
+                        WHERE Status = 'Unresolved'
+                        AND UpdatedScore < 8
+                        ''')
+
+        db.commit()
+
+    except sqlite3.DatabaseError:
+        db.rollback()
+        raise
+
+    admin_updated = refresh_top_10("Admin")
+    tech_updated = refresh_top_10("Tech")
+
+    if not admin_updated or not tech_updated:
+        raise RuntimeError("Failed to refresh top 10 JSON files.")
+
+    return True
