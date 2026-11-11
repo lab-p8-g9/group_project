@@ -7,10 +7,10 @@ class Account(ABC):
 
     def __init__(self, address, password):
         if not isinstance(address, str) or not address.strip():
-            raise ValueError("Address cannot be empty.")
+            print("Address cannot be empty.")
 
         if not isinstance(password, str) or not password:
-            raise ValueError("Password cannot be empty.")
+            print("Password cannot be empty.")
         
         self._address = address.strip()
         self._pw = password
@@ -30,7 +30,7 @@ class Account(ABC):
 
     def set_account(self): #inserts account made into complaint.db - Accounts
         if self._role not in self.VALID_ROLES:
-            raise ValueError("Invalid account role.")
+            print("Invalid account role.")
 
         try:
             c.execute(
@@ -45,9 +45,7 @@ class Account(ABC):
 
         except sqlite3.IntegrityError as error:
             db.rollback()
-            raise ValueError(
-                "Account already exists or violates a constraint."
-            ) from error
+            print("Account already exists or violates a constraint.")
 
         except sqlite3.DatabaseError:
             db.rollback()
@@ -59,7 +57,8 @@ class Account(ABC):
                     FROM Accounts 
                     WHERE Address = ?''', 
                     (self.address,))
-        return c.fetchone()
+        data = c.fetchone()
+        print(data)
 
     
         
