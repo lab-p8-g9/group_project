@@ -7,11 +7,11 @@ class Account(ABC):
 
     def __init__(self, address, password):
         if not isinstance(address, str) or not address.strip():
-            print("Address cannot be empty.")
+            raise ValueError("Address cannot be empty.")
 
         if not isinstance(password, str) or not password:
-            print("Password cannot be empty.")
-        
+            raise ValueError("Password cannot be empty.")
+
         self._address = address.strip()
         self._pw = password
         self._role = self.assign_role()
