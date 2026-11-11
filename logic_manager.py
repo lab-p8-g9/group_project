@@ -1,8 +1,8 @@
 from data_manager2 import *
 from datetime import datetime, timedelta
-from Data_manager.all_emails import Email
-from Data_manager.tech_emails import TechE
-from Data_manager.admin_emails import Admin
+from all_emails import Email
+from tech_emails import TechE
+from admin_emails import AdminE
 import os
 
 
@@ -16,6 +16,23 @@ import os
 # [transfer] emails: email, subject, content
 
 #used class_emails.py, class_admin_team.py, class_tech_emails.py
+
+
+def process_ai_sample(ai_file):
+    with open(ai_file, "r", encoding="utf-8") as file:
+        sample = json.load(file)
+        
+        for item in sample:
+            ID, current_datetime = emails_AI_analysis_to_SQL(item)
+            new_priority_score, deadline = Logic_Deadline_Classification(item, current_datetime)
+            Tech_Admin_to_SQL(item, ID, current_datetime, new_priority_score, deadline)
+        
+        clear_ai_sample(ai_file)
+        print("AI Sample processed Successfully!")
+
+def clear_ai_sample(ai_file):
+    with open(ai_file, "w", encoding="utf-8") as file:
+        json.dump([], file, indent=4)
 
 def emails_AI_analysis_to_SQL(item):
 
@@ -32,39 +49,7 @@ def emails_AI_analysis_to_SQL(item):
     object.add_to_AI_C_A(category, priority_score, assigned_to)
     
     return id, current_datetime
-        
 
-def process_ai_sample(file):
-    with open(file, "r", encoding="utf-8") as file:
-        sample = json.load(file)
-        
-        for item in sample:
-            ID, current_datetime = emails_AI_analysis_to_SQL(item)
-            new_priority_score, deadline = Logic_Deadline_Classification(item, current_datetime)
-            Tech_Admin_to_SQL(item, ID, current_datetime, new_priority_score, deadline)
-
-
-
-def Tech_Admin_to_SQL(item, id, current_datetime, new_priority_score, deadline):
-    id1 = id
-    category = item["category"]
-    email_address = item["email_address"]
-    subject = item["subject"]
-    content = item["content"]
-    priority_score = item["priority_score"]
-    new_priority_score1 = new_priority_score
-    deadline1 = deadline
-
-    if item["assigned_to"] == "Tech_Professionals":
-        object = TechE(id1, category, email_address, subject, content, current_datetime, deadline, priority_score)
-        object.add_to_DB()
-        object.update_score(new_priority_score1)
-
-    elif item["assigned_to"] == "Admin_Team":
-        object = Admin(id1, category, email_address, subject, content, current_datetime, deadline, priority_score)
-        object.add_to_DB()
-        object.update_score(new_priority_score1) 
-        
 
 
 def Logic_Deadline_Classification(item, date_created):
@@ -91,5 +76,44 @@ def Logic_Deadline_Classification(item, date_created):
 
     return new_priority, deadline_date
 
+
+
+def Tech_Admin_to_SQL(item, id, current_datetime, new_priority_score, deadline):
+    id1 = id
+    category = item["category"]
+    email_address = item["email_address"]
+    subject = item["subject"]
+    content = item["content"]
+    priority_score = item["priority_score"]
+
+    if item["assigned_to"] == "Tech_Professionals":
+        object = TechE(id1, category, email_address, subject, content, current_datetime, deadline, priority_score)
+        object.add_to_DB()
+        object.update_score(new_priority_score)
+
+    elif item["assigned_to"] == "Admin_Team":
+        object = AdminE(id1, category, email_address, subject, content, current_datetime, deadline, priority_score)
+        object.add_to_DB()
+        object.update_score(new_priority_score) 
+
+        
+def Top10_List(table):
+        
+        refresh_top_10(table)
+        data = load_from_JSON(table)
+        return data
+
+
+def display_Top10(data):
+    for item in data:
+        print(f"ComplaintID: {item["ComplaintID"]}")
+        print(f"Address: {item["Address"]}")        
+        print(f"Category: {item["Category"]}")         
+        print(f"Content: {item["Content"]}")         
+        print(f"Datetime: {item["Datetime"]}")   
+        print(f"Deadline: {item["Deadline"]}")   
+        print(f"PriorityScore: {item["PriorityScore"]}")   
+        print(f"UpdatedScore: {item["UpdatedScore"]}")   
+        print(f"Status: {item["Status"]}\n")   
 
 

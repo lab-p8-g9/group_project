@@ -305,6 +305,7 @@ def update_all_scores(): #updates all UNRESOLVED complaints with scores below 8 
         db.rollback()
         raise
 
+
     admin_updated = refresh_top_10("Admin")
     tech_updated = refresh_top_10("Tech")
 
