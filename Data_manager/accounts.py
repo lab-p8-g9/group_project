@@ -58,7 +58,7 @@ class Account(ABC):
                     WHERE Address = ?''', 
                     (self.address,))
         data = c.fetchone()
-        print(data)
+        return data 
 
     
         
