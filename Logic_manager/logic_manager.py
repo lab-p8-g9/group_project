@@ -1,311 +1,119 @@
-
-from Data_manager.data_manager2 import *
+from data_manager2 import *
 from datetime import datetime, timedelta
-import json
+from Data_manager.all_emails import Email
+from Data_manager.tech_emails import TechE
+from Data_manager.admin_emails import AdminE
 import os
 
 
+# Ai json sample: email_address, subject, content, category, priorityscore, assignedto
 
-def Logic_Create_Email_List(email, subject, content):
+# [sql] emails: complaintid, email, subject, content, datatime
+# [sql] ai_complaint_analysis: complaintid, category, priorityscore, assignedto
+# [sql] admin_team: compalintid, category, datatime, deadline, priorityscore, updatedpriorityscore
+# [sql] tech_team: compalintid, category, datatime, deadline, priorityscore, updatedpriorityscore
 
-    email_list = [{
-        "Email": email,
-        "Subject": subject,
-        "Content": content
-    }]
+# [transfer] emails: email, subject, content
 
-    save_to_JSON(email_list)
-
-
-
-# STEP 1: READ INCOMING AI JSON FILE
-
-def Logic_Read_AI_JSON(file_name):
-
-    with open(file_name, "r", encoding="utf-8") as file:
-        data = json.load(file)
-
-    return data
+#used class_emails.py, class_admin_team.py, class_tech_emails.py
 
 
-# STEP 2: SAVE EMAILS INTO SQL
-
-
-def _Emails_To_SQL(db, emails):
-
-    c = db.cursor()
-
-    for email_data in emails:
-
-        # Get email details from JSON
-        email_address = email_data["email_address"]
-        subject = email_data["subject"]
-        content = email_data["content"]
-
-        # Generate current date and time
-        current_datetime = datetime.now().strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-
-        # Insert email into Emails table
-        c.execute("""
-            INSERT INTO Emails
-            (Email, Subject, Content, Datetime)
-            VALUES (?, ?, ?, ?)
-        """, (
-            email_address,
-            subject,
-            content,
-            current_datetime
-        ))
-
-        # Get ComplaintID automatically assigned by SQLite
-        complaint_id = c.lastrowid
-
-        # STEP 3: Save corresponding AI analysis
-        Logic_Save_AI_Analysis_To_SQL(
-            db,
-            email_data,
-            complaint_id
-        )
-
-
-
-# STEP 3: SAVE AI ANALYSIS INTO SQL
-
-def Logic_Save_AI_Analysis_To_SQL(db, email_data, complaint_id):
-
-    c = db.cursor()
-
-    category = email_data["category"]
-    priority_score = email_data["priority_score"]
-    assigned_to = email_data["assigned_to"]
-
-    c.execute("""
-        INSERT INTO AI_Complaint_Analysis
-        (ComplaintID, Category, PriorityScore, AssignedTo)
-        VALUES (?, ?, ?, ?)
-    """, (
-        complaint_id,
-        category,
-        priority_score,
-        assigned_to
-    ))
+def process_ai_sample(ai_file):
+    with open(ai_file, "r", encoding="utf-8") as file:
+        sample = json.load(file)
+        
+        for item in sample:
+            ID, current_datetime = emails_AI_analysis_to_SQL(item)
+            new_priority_score, deadline = Logic_Deadline_Classification(item, current_datetime)
+            Tech_Admin_to_SQL(item, ID, current_datetime, new_priority_score, deadline)
+        
+        clear_ai_sample(ai_file)
+        print("AI Sample processed Successfully!")
 
 
 
 
-# STEP 4: PROCESS INCOMING JSON
+def clear_ai_sample(ai_file):
+    with open(ai_file, "w", encoding="utf-8") as file:
+        json.dump([], file, indent=4)
 
-def Logic_Process_Incoming_JSON(file_name):
+def emails_AI_analysis_to_SQL(item):
 
-    if not os.path.exists(file_name):
-        print("AI JSON file not found.")
-        return False
+    email_address = item["email_address"]
+    subject = item["subject"]
+    content = item["content"]
+    category = item["category"]
+    priority_score = item["priority_score"]
+    assigned_to = item["assigned_to"]
+    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    db = Logic_Connect_Database()
-
-    try:
-
-        # Read JSON file
-        emails = Logic_Read_AI_JSON(file_name)
-
-        # Insert Emails and AI analysis into SQL
-        Logic_Save_Emails_To_SQL(db, emails)
-
-        db.commit()
-
-
-
-        print("Incoming JSON processed successfully.")
-        return True
-
-    except Exception as error:
-        db.rollback()
-        print("Error processing incoming JSON:", error)
-        return False
-
-    finally:
-        db.close()
-
-#======================================================================================================
-
-
-# Connect to database 'complain.db"
-def Logic_Connect_Database():
-    return connect("complaint.db")
-
-
-def Logic_Assign_Complaints(db):
-
-    c = db.cursor()
-
-    c.execute("""
-        SELECT a.ComplaintID, a.Category,
-               a.PriorityScore, a.AssignedTo,
-               e.Datetime
-        FROM AI_Complaint_Analysis a
-        JOIN Emails e
-        ON a.ComplaintID = e.ComplaintID
-    """)
-
-    complaints = c.fetchall()
-
-    for complaint_id, category, priority, assigned_to, date in complaints:
-
-        if assigned_to == "Tech_Professionals":
-            table_name = "Tech_Professionals"
-
-        elif assigned_to == "Admin_Team":
-            table_name = "Admin_Team"
-
-        else:
-            continue
-
-        # Prevent duplicate assignments
-        c.execute(
-            f"SELECT 1 FROM {table_name} WHERE ComplaintID = ?",
-            (complaint_id,)
-        )
-
-        if c.fetchone():
-            continue
-
-        # Insert complaint with its date
-        c.execute(f"""
-            INSERT INTO {table_name}
-            (ComplaintID, Category, Datetime, PriorityScore)
-            VALUES (?, ?, ?, ?)
-        """, (complaint_id, category, date, priority))
+    object = Email(email_address, subject, content, current_datetime)
+    id = object.add_to_DB()
+    object.add_to_AI_C_A(category, priority_score, assigned_to)
+    
+    return id, current_datetime
 
 
 
-# Calculate priority and deadline
-def Logic_Deadline_Classification(priority_score, date_created, current_date):
+def Logic_Deadline_Classification(item, date_created):
+
+    date_created = datetime.strptime(date_created, "%Y-%m-%d %H:%M:%S")
+    priority_score = item["priority_score"]
+    current_date = datetime.now()
+
+    max_priority = 8
+    min_priority = 0
 
     days_passed = (current_date.date() - date_created.date()).days
 
-    if days_passed <= 0:
+    if days_passed <= min_priority:
         new_priority = priority_score
     else:
         new_priority = priority_score + days_passed
 
-    if new_priority > 8:
-        new_priority = 8
+    if new_priority > max_priority:
+        new_priority = max_priority
 
-    days_to_deadline = max(0, 8 - priority_score)
-
+    days_to_deadline = max(min_priority, max_priority - priority_score)
     deadline_date = date_created + timedelta(days=days_to_deadline)
 
     return new_priority, deadline_date
 
 
-# Update priority and deadline for one table use function for each table respectively
-def Logic_Update_Priority(db, table_name):
 
-    if table_name not in ("Admin_Team", "Tech_Professionals"):
-        raise ValueError("Invalid table name")
+def Tech_Admin_to_SQL(item, id, current_datetime, new_priority_score, deadline):
+    id1 = id
+    category = item["category"]
+    email_address = item["email_address"]
+    subject = item["subject"]
+    content = item["content"]
+    priority_score = item["priority_score"]
 
-    c = db.cursor()
-    current_date = datetime.now()
+    if item["assigned_to"] == "Tech_Professionals":
+        object = TechE(id1, category, email_address, subject, content, current_datetime, deadline, priority_score)
+        object.add_to_DB()
+        object.update_score(new_priority_score)
 
-    c.execute(f"""
-        SELECT ComplaintID, PriorityScore, Datetime
-        FROM {table_name}
-    """)
-
-    complaint_data = c.fetchall()
-
-    for complaint_id, Priority, date in complaint_data:
-        try:
-            date_created = datetime.fromisoformat(date)
-        except ValueError:
-            date_created = datetime.strptime(date, "%d-%m-%Y")
-
-        new_priority, deadline_date = Logic_Deadline_Classification(
-            Priority, date_created, current_date
-        )
-
-        c.execute(
-            f"""UPDATE {table_name}
-                SET UpdatedScore = ?, Deadline = ?
-                WHERE ComplaintID = ?""",
-            (
-                new_priority,
-                deadline_date.strftime("%Y-%m-%d"),
-                complaint_id
-            )
-        )
+    elif item["assigned_to"] == "Admin_Team":
+        object = AdminE(id1, category, email_address, subject, content, current_datetime, deadline, priority_score)
+        object.add_to_DB()
+        object.update_score(new_priority_score) 
 
 
-# Sort complaints from highest to lowest priority using SQL Desc
-def Logic_Sort_Complaints(db, table_name):
 
-    if table_name not in ("Admin_Team", "Tech_Professionals"):
-        raise ValueError("Invalid table name")
-
-    c = db.cursor()
-
-    c.execute(f"""
-        SELECT *
-        FROM {table_name}
-        ORDER BY UpdatedScore DESC, Deadline ASC
-    """)
-
-    return c.fetchall()
+        
+def Top10_List(table):
+        
+        refresh_top_10(table)
+        data = load_from_JSON(table)
+        return data
 
 
-# Display sorted complaints for test only
-
-# def Logic_Display_Complaints(table_name, complaints):
-
-#     print(f"\n{table_name} Complaints:")
-
-#     for complaint in complaints:
-#         print(complaint)
-
-
-# Main function applications for table 'tech_professional' & 'Admin' in 'complaint.db'
-
-
-def Logic_Class_Main():
-
-    db = Logic_Connect_Database()
-
-    try:
-        # Assign complaints to departments
-        Logic_Assign_Complaints(db)
-
-        # Update priority and deadline
-        Logic_Update_Priority(db, "Admin_Team")
-        Logic_Update_Priority(db, "Tech_Professionals")
-
-        # Save changes
-        db.commit()
-
-        # Sort complaints
-        admin_complaints = Logic_Sort_Complaints(db, "Admin_Team")
-        tech_complaints = Logic_Sort_Complaints(db, "Tech_Professionals")
-
-        # Display complaints
-        # Logic_Display_Complaints("Admin_Team", admin_complaints)
-        # Logic_Display_Complaints("Tech_Professionals", tech_complaints)
-        print("Logic manager has sucessfully executed")
-
-    finally:
-        db.close()
-
-
-def Logic_Main(file_name):
-
-    # Step 1: Process incoming AI JSON
-    if Logic_Process_Incoming_JSON(file_name):
-
-        # Step 2: Run original Logic Manager functions
-        Logic_Class_Main()
-
-    else:
-        print("JSON processing failed. Logic Manager stopped.")
-
-
+def display_Top10(data):
+    for item in data:
+        print(f"ComplaintID: {item["ComplaintID"]}")
+        print(f"Address: {item["Address"]}")             
+        print(f"Content: {item["Content"]}")           
+        print(f"Deadline: {item["Deadline"]}")   
+        print(f"UpdatedScore: {item["UpdatedScore"]}")   
 
