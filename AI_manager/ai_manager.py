@@ -5,7 +5,7 @@ import json
 from pygarble import EnsembleDetector #pip install pygarble
 from dotenv import load_dotenv #pip install python-dotenv
 from openai import OpenAI #pip install openai
-from Logic_manager.logic_manager import Logic_Main, Logic_Create_Email_List, Logic_Save_AI_Analysis_To_SQL, Logic_Connect_Database
+from Logic_manager.logic_manager import Logic_Main, Logic_Create_Email_List
     
 load_dotenv()
 

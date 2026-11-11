@@ -585,16 +585,57 @@
 }
 
 .complaints-page #complaintTable th:nth-child(1) {
-    width: 28%;
+    width: 20%;
 }
 
 .complaints-page #complaintTable th:nth-child(2) {
-    width: 27%;
+    width: 20%;
 }
 
 .complaints-page #complaintTable th:nth-child(3) {
-    width: 45%;
+    width: 40%;
 }
+
+.complaints-page #complaintTable th:nth-child(4) {
+    width: 20%;
+}
+
+.btn-unresolved {
+    background: rgb(248, 63, 63);
+    font-size: 20px;
+
+    min-height: 52px;
+    margin: 0;
+    padding: 12px 22px;
+
+    font-family: inherit;
+    font-size: 21px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+
+    color: #fff;
+    border: 1px solid transparent;
+    border-radius: 12px;
+
+    box-shadow: 0 7px 16px rgba(118, 80, 207, 0.2);
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.text-resolved {
+    color: rgb(23, 189, 23)
+}
+
+.complaints-page #complaintTable th:nth-child(4) > span {
+    color: green;
+}
+
+
 
 /* Table headings */
 .customer-home-page #statusTable th,
@@ -639,7 +680,8 @@
 
 /* Subject column */
 .customer-home-page #statusTable td:nth-child(2),
-.complaints-page #complaintTable td:nth-child(2) {
+.complaints-page #complaintTable td:nth-child(2),
+.complaints-page #complaintTable td:nth-child(4) {
     color: #392f4a;
     font-weight: 700;
 }

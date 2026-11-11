@@ -1,5 +1,5 @@
-from sqlite3 import connectLogic_Save
-from Data_manager.data_manager import *
+
+from Data_manager.data_manager2 import *
 from datetime import datetime, timedelta
 import json
 import os

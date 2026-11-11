@@ -19,7 +19,7 @@
 
     <div id="header">
         <span class="current-user">
-            <h4>Current User: {{ userData.email }} | Role: {{ userData.role }}</h4>
+            <h4>Current User: {{ email }} | Role: {{ role }}</h4>
         </span>
 
         <span class="logout-container">
@@ -49,15 +49,23 @@
                             <th>Email</th>
                             <th>Subject</th>
                             <th>Content</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         {% for rows in data %}
                         <tr>
-                            <td>{{ rows.Email }}</td>
-                            <td>{{ rows.Subject }}</td>
-                            <td>{{ rows.Content }}</td>
+                            <td>{{ rows[1] }}</td>
+                            <td>{{ rows[2] }}</td>
+                            <td>{{ rows[3] }}</td>
+                            <td>
+                                {% if rows[8] == 'nresolved' %}
+                                <button class="btn-unresolved">{{ rows[8] }}</button>
+                                {% else %}
+                                <span class="text-resolved">{{ rows[8] }}</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

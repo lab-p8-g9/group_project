@@ -1,6 +1,6 @@
 #import external functions from the data_manger and ai_manager
 from Data_manager.data_manager import save_to_SQL, load_from_SQL, load_from_JSON
-from ai_manager import analyse_complaint, process_and_save_complaint
+from AI_manager.ai_manager import analyse_complaint, process_and_save_complaint
 
 #log to store summary of what happened
 log = []
