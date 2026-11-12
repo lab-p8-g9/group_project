@@ -333,7 +333,6 @@ def load_all_unresolved(department):
 
     return c.fetchall()
 
-
 def load_all_resolved(department):
     # Retrieve all resolved complaints
     if department == "Admin":
@@ -375,5 +374,50 @@ def update_all_scores(): #updates all UNRESOLVED complaints with scores below 8 
 
     if not admin_updated or not tech_updated:
         raise RuntimeError("Failed to refresh top 10 JSON files.")
+
+    return True
+
+def resolve(cid):
+    try:
+        # Find which department the complaint belongs to
+        c.execute('''SELECT AssignedTo
+                     FROM AI_Complaint_Analysis
+                     WHERE ComplaintID = ?''', (cid,))
+
+        result = c.fetchone()
+
+        if result is None:
+            raise ValueError(f"Complaint {cid} not found.")
+
+        department = result[0]
+
+        # Determine the relevant SQL table
+        if department == "Admin":
+            table = "Admin_Team"
+        elif department == "Tech":
+            table = "Tech_Professionals"
+        else:
+            raise ValueError("Invalid department.")
+
+        # Update complaint status
+        c.execute(f'''UPDATE {table}
+                      SET Status = ?
+                      WHERE ComplaintID = ?''',
+                  ('Resolved', cid))
+
+        if c.rowcount == 0:
+            raise ValueError(f"Complaint {cid} not found in {table}.")
+
+        db.commit()
+
+    except (sqlite3.DatabaseError, ValueError):
+        db.rollback()
+        raise
+
+    # Refresh the corresponding department JSON
+    if not refresh_top_10(department):
+        raise RuntimeError(
+            f"Complaint resolved, but {department} JSON refresh failed."
+        )
 
     return True

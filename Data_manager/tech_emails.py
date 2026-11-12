@@ -128,55 +128,6 @@ class TechE(Email):
 
         return True
     
-    def resolve(self):
-        try:
-            c.execute(
-                '''UPDATE Tech_Professionals
-                SET Status = ?
-                WHERE ComplaintID = ?''',
-                ('Resolved', self.id)
-            )
 
-            if c.rowcount == 0:
-                raise ValueError(f"Complaint {self.id} not found.")
 
-            db.commit()
-            self.status = 'Resolved'
-
-        except (sqlite3.DatabaseError, ValueError):
-            db.rollback()
-            raise
-
-        if not refresh_top_10('Tech'):
-            raise RuntimeError(
-                "Complaint resolved, but Tech JSON refresh failed."
-            )
-
-        return True
-
-    def unresolve(self):
-        try:
-            c.execute(
-                '''UPDATE Tech_Professionals
-                SET Status = ?
-                WHERE ComplaintID = ?''',
-                ('Unresolved', self.id)
-            )
-
-            if c.rowcount == 0:
-                raise ValueError(f"Complaint {self.id} not found.")
-
-            db.commit()
-            self.status = 'Unresolved'
-
-        except (sqlite3.DatabaseError, ValueError):
-            db.rollback()
-            raise
-
-        if not refresh_top_10('Tech'):
-            raise RuntimeError(
-                "Complaint reopened, but Tech JSON refresh failed."
-            )
-
-        return True
 

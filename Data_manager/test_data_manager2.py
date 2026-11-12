@@ -292,8 +292,8 @@ def test_admin(email, email_id):
 
     check(
         "Resolve Admin complaint",
-        admin_email.resolve() is True
-        and admin_email.status == "Resolved"
+        dm.resolve(email_id) is True
+        and get_status(email_id, "Admin") == "Resolved"
     )
 
     # Use the new external retrieval functions
@@ -314,17 +314,9 @@ def test_admin(email, email_id):
     )
 
     check(
-        "Reopen Admin complaint",
-        admin_email.unresolve() is True
-        and admin_email.status == "Unresolved"
-    )
-
-    check(
-        "Reopened Admin appears in unresolved",
-        any(
-            row[0] == email_id
-            for row in dm.load_all_unresolved("Admin")
-        )
+        "Resolving Admin complaint again keeps it resolved",
+        dm.resolve(email_id) is True
+        and get_status(email_id, "Admin") == "Resolved"
     )
 
     return admin_email
@@ -387,8 +379,8 @@ def test_tech():
 
     check(
         "Resolve Tech complaint",
-        tech_email.resolve() is True
-        and tech_email.status == "Resolved"
+        dm.resolve(email_id) is True
+        and get_status(email_id, "Tech") == "Resolved"
     )
 
     check(
@@ -408,17 +400,9 @@ def test_tech():
     )
 
     check(
-        "Reopen Tech complaint",
-        tech_email.unresolve() is True
-        and tech_email.status == "Unresolved"
-    )
-
-    check(
-        "Reopened Tech appears in unresolved",
-        any(
-            row[0] == email_id
-            for row in dm.load_all_unresolved("Tech")
-        )
+        "Resolving Tech complaint again keeps it resolved",
+        dm.resolve(email_id) is True
+        and get_status(email_id, "Tech") == "Resolved"
     )
 
     return email_id
@@ -1036,7 +1020,11 @@ def test_resolved_batch():
         )
 
         complaint.add_to_DB()
-        complaint.resolve()
+        check(
+            f"{department}: External resolve() succeeds",
+            dm.resolve(cid) is True
+            and get_status(cid, department) == "Resolved"
+        )
 
         resolved_ids[department] = cid
 
@@ -1075,6 +1063,20 @@ def test_resolved_batch():
         )
 
     verify_json()
+
+
+def test_resolve_invalid_id():
+    print("\n===== RESOLVE ERROR TESTS =====")
+
+    dm.c.execute("SELECT MAX(ComplaintID) FROM Emails")
+    maximum_id = dm.c.fetchone()[0] or 0
+    missing_id = maximum_id + 1000
+
+    check_exception(
+        "Resolving nonexistent complaint raises ValueError",
+        ValueError,
+        lambda: dm.resolve(missing_id)
+    )
 
 
 # ---------------- MAIN TEST RUNNER ----------------
@@ -1121,6 +1123,8 @@ def run_tests():
         test_update_all_scores()
 
         test_resolved_batch()
+
+        test_resolve_invalid_id()
 
     except Exception as error:
         failed += 1
