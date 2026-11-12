@@ -1,10 +1,10 @@
 # importing external libraries
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, jsonify, render_template, request, redirect, url_for
 from AI_manager.openrouter_ai_manager import OpenRouterAIManager
 from Data_manager.customer_accounts import CustomerA
 from Data_manager.admin_accounts import AdminA
 from Data_manager.tech_accounts import TechA
-from Data_manager.data_manager2 import load_all_resolved, load_all_unresolved, load_first_10, load_customer_complaints, load_from_JSON
+from Data_manager.data_manager2 import load_all_resolved, load_all_unresolved, load_first_10, load_customer_complaints, load_from_JSON, resolve
 app = Flask(__name__)
 
 # collect summary of what happened in the I/O Manager
@@ -62,7 +62,7 @@ def employeeLoginPage():
 def customerPage():
     userEmail = request.args.get('userEmail')
     userRole = request.args.get('userRole')
-    customer_complaint = load_from_SQL("Complaints")
+    customer_complaint = load_customer_complaints(userEmail)
     return render_template('customer.html', complaints = customer_complaint, email = userEmail, role = userRole)
 
 @app.route('/employee')
@@ -74,10 +74,11 @@ def employeePage():
 
 @app.route('/viewComplaint')
 def viewComplaintPage():
+    userEmail = request.args.get('userEmail')
     userRole = request.args.get('userRole')
     complaints = load_all_unresolved(userRole)
-    complaints.append(load_all_resolved(userRole))
-    return render_template('complaints.html', items_list = complaints)
+    complaints.extend(load_all_resolved(userRole))
+    return render_template('complaints.html', data = complaints, email = userEmail, role = userRole)
 
 # -------------------------------------
 # Account Login/ Signup functions
@@ -172,8 +173,15 @@ def employeeHomePage():
             return(alertBox("userData is empty"))
 
 # -------------------------------------
-# Send/ View Complaint function
+# Send/ View / Resolve Complaint function
 # -------------------------------------
+
+@app.route('/resolved', methods=['POST'])
+def resolving():
+    resolveBtn = request.form.get('resolveBtn')
+    resolve(resolveBtn)
+    return jsonify(status="Resolved")
+
 
 # function for user to submit their complaint
 @app.route('/submitComplaint', methods=['POST'])

@@ -1,0 +1,112 @@
+[
+    {
+        "ComplaintID": 11,
+        "Address": "david@test.com",
+        "Category": "Technical Issue",
+        "Content": "Company server is unavailable",
+        "Datetime": "2026-11-10 10:08:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 8,
+        "UpdatedScore": 8,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 15,
+        "Address": "charlie@test.com",
+        "Category": "Technical Issue",
+        "Content": "Important files have disappeared",
+        "Datetime": "2026-11-10 10:12:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 8,
+        "UpdatedScore": 8,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 27,
+        "Address": "emma@test.com",
+        "Category": "Technical Issue",
+        "Content": "Unable to connect to database",
+        "Datetime": "2026-11-10 10:24:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 6,
+        "UpdatedScore": 8,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 29,
+        "Address": "bob@test.com",
+        "Category": "Technical Issue",
+        "Content": "Computer freezes during operation",
+        "Datetime": "2026-11-10 10:26:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 6,
+        "UpdatedScore": 8,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 31,
+        "Address": "david@test.com",
+        "Category": "Technical Issue",
+        "Content": "Entire office network is down",
+        "Datetime": "2026-11-10 10:28:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 8,
+        "UpdatedScore": 8,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 8,
+        "Address": "alice@test.com",
+        "Category": "Technical Issue",
+        "Content": "Printer cannot connect",
+        "Datetime": "2026-11-10 10:05:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 5,
+        "UpdatedScore": 7,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 22,
+        "Address": "emma@test.com",
+        "Category": "Technical Issue",
+        "Content": "Monitor flickers frequently",
+        "Datetime": "2026-11-10 10:19:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 5,
+        "UpdatedScore": 7,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 14,
+        "Address": "bob@test.com",
+        "Category": "Technical Issue",
+        "Content": "Application displays an error",
+        "Datetime": "2026-11-10 10:11:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 4,
+        "UpdatedScore": 6,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 23,
+        "Address": "alice@test.com",
+        "Category": "Technical Issue",
+        "Content": "Emails are not updating",
+        "Datetime": "2026-11-10 10:20:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 4,
+        "UpdatedScore": 6,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 4,
+        "Address": "bob@test.com",
+        "Category": "Technical Issue",
+        "Content": "Cannot connect to WiFi",
+        "Datetime": "2026-11-10 10:01:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 3,
+        "UpdatedScore": 5,
+        "Status": "Unresolved"
+    }
+]
