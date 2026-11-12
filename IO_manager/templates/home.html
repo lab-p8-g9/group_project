@@ -36,8 +36,10 @@
                 </span>
 
                 <span class="viewComplaints-action">
-                    <form id="viewComplaint" action="./viewComplaint">
-                        <button id="complaintbtn" name="action" type="submit" value="complaint">View Complaints</button>
+                    <form id="viewComplaint" action="{{ url_for('viewComplaintPage') }}" method="GET">
+                        <input type="hidden" name="userRole" value="{{ role }}">
+                        <input type="hidden" name="userEmail" value="{{ email }}">
+                        <button id="complaintbtn" name="action" type="submit">View Complaints</button>
                     </form>
                 </span>
             </div>
@@ -59,11 +61,14 @@
                             <td>{{ rows[1] }}</td>
                             <td>{{ rows[2] }}</td>
                             <td>{{ rows[3] }}</td>
-                            <td>
+                            <td class="align-table">
                                 {% if rows[8] == 'Unresolved' %}
-                                <button class="btn-unresolved">{{ rows[8] }}</button>
+                                    <form class="resolve-form" action="{{ url_for('resolving') }}" method="POST">
+                                        <input type="hidden" name="resolveBtn" value="{{ rows[0] }}">
+                                        <button type="submit" class="btn-unresolved">{{ rows[8] }}</button>
+                                    </form>
                                 {% else %}
-                                <span class="text-resolved">{{ rows[8] }}</span>
+                                    <span class="text-resolved">{{ rows[8] }}</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -75,5 +80,49 @@
         </div>
     </main>
 
+    <script>
+        document.addEventListener('submit', async (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || !form.matches('.resolve-form')) {
+                return;
+            }
+
+            event.preventDefault();
+            const button = form.querySelector('button[type="submit"]');
+            button.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: form.method,
+                    body: new FormData(form)
+                });
+                if (!response.ok) {
+                    throw new Error(`Request failed with status ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.status !== 'Resolved') {
+                    throw new Error('Unexpected resolve response');
+                }
+
+                const resolved = document.createElement('span');
+                resolved.className = 'text-resolved';
+                resolved.textContent = result.status;
+                form.replaceWith(resolved);
+            } catch (error) {
+                console.error('Could not resolve complaint:', error);
+                button.disabled = false;
+
+                let errorMessage = form.querySelector('.resolve-error');
+                if (!errorMessage) {
+                    errorMessage = document.createElement('span');
+                    errorMessage.className = 'resolve-error';
+                    errorMessage.setAttribute('role', 'alert');
+                    form.append(errorMessage);
+                }
+                errorMessage.textContent = 'Could not resolve complaint. Please try again.';
+            }
+        });
+    </script>
 </body>
 </html>

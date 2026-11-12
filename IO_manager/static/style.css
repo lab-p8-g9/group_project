@@ -628,7 +628,11 @@
 }
 
 .text-resolved {
-    color: rgb(23, 189, 23)
+    color: rgb(23, 189, 23);
+}
+
+.align-table {
+    text-align: center;
 }
 
 .complaints-page #complaintTable th:nth-child(4) > span {
