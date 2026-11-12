@@ -1,9 +1,10 @@
 # importing external libraries
 from flask import Flask, render_template, request, redirect, url_for
-from AI_manager.ai_manager import analyse_complaint
+from AI_manager.openrouter_ai_manager import OpenRouterAIManager
 from Data_manager.customer_accounts import CustomerA
 from Data_manager.admin_accounts import AdminA
 from Data_manager.tech_accounts import TechA
+from Data_manager.data_manager2 import load_all_resolved, load_all_unresolved, load_first_10, load_customer_complaints, load_from_JSON
 app = Flask(__name__)
 
 # collect summary of what happened in the I/O Manager
@@ -68,21 +69,14 @@ def customerPage():
 def employeePage():
     userEmail = request.args.get('userEmail')
     userRole = request.args.get('userRole')
-    if userRole == "Admin":
-        top10Complaint = AdminA().load_first_10()
-    elif userRole == "Tech":
-        top10Complaint = TechA().load_first_10()
+    top10Complaint = load_first_10(userRole)
     return render_template('home.html', data = top10Complaint, email = userEmail, role = userRole)
 
 @app.route('/viewComplaint')
 def viewComplaintPage():
     userRole = request.args.get('userRole')
-    if(userRole == "Admin"):
-        complaints = AdminA().load_all_unresolved()
-        complaints2 = AdminA().load_all_resolved()
-    elif(userRole == "Tech"):
-        complaints = TechA().load_all_unresolved()
-        complaints2 = TechA().load_all_resolved()
+    complaints = load_all_unresolved(userRole)
+    complaints.append(load_all_resolved(userRole))
     return render_template('complaints.html', items_list = complaints)
 
 # -------------------------------------
@@ -133,7 +127,7 @@ def accountPage():
                 if(userData == None):
                     return(alertBox("User does not exist"))
                 else:
-                    return redirect(url_for('customerPage', userEmail = userData[0], userRole = userData[2]))
+                    return redirect(url_for('customerPage', userEmail = userData[0], userPassword = userData[1], userRole = userData[2]))
     # else if user is an employee, go to employee.html
     elif button_clicked == "employee":
         print("Redirecting to employee login page")
@@ -163,10 +157,11 @@ def employeeHomePage():
             userList = TechA(user_email, password)
         try:
             userData = userList.get_account()
+            print(userList.get_account())
             print(userData)
             print("Login Successful")
             print("Redirecting to Employee Homepage")
-            return redirect(url_for('employeePage', userEmail = userData[0], userRole = userData[2]))
+            return redirect(url_for('employeePage', userEmail = userData[0], userPassword = userData[1], userRole = userData[2]))
         # if user tries to type in an email that already exists but used wrong password
         except ValueError as err:
             if str(err) == "Account already exists.":
@@ -207,7 +202,8 @@ def submit():
         summary("Update", "User's email is valid, complaint is being assessed by AI now")
         print("AI is starting its analysis")
         # call the analyse_complaint function in AI_Manager taking subject of email and user's complaint
-        result = analyse_complaint(subject, user_complaint)
+        result = OpenRouterAIManager.analyse_complaint(subject, user_complaint)
+        
             # added to log to display summary at the end
         if(0 < result.priority_score < 9):
             summary("Update", f"Complaint is valid with a priority score of {result.priority_score} with the category: {result.category}")
