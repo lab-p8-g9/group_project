@@ -45,7 +45,9 @@ class Account(ABC):
 
         except sqlite3.IntegrityError as error:
             db.rollback()
-            print("Account already exists or violates a constraint.")
+            raise ValueError(
+                "Account already exists or violates a constraint."
+            ) from error
 
         except sqlite3.DatabaseError:
             db.rollback()
@@ -58,7 +60,11 @@ class Account(ABC):
                     WHERE Address = ?''', 
                     (self.address,))
         data = c.fetchone()
-        return data 
+
+        if data == None: 
+            print('Account not found.')
+            return None
+        return data  
 
     
         

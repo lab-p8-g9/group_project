@@ -1,44 +1,13 @@
-"""Functional regression tests for Data_manager.
 
-Runs functional tests against the permanent Data_manager/complaint.db.
-WARNING: Tests insert complaints and update records in the permanent database.
-"""
 import sys
 import sqlite3
+import traceback
 from pathlib import Path
 
-REAL_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = REAL_DIR.parent
-REAL_DB = REAL_DIR / "complaint.db"
-
-
-def show_real_customer_history():
-    print("\n===== EXISTING CUSTOMER COMPLAINTS (READ ONLY) =====")
-    if not REAL_DB.is_file():
-        print("[INFO] No existing complaint.db; tests will create a fresh temporary database.")
-        return
-    # Open read-only, without importing data_manager2 (which creates tables).
-    connection = sqlite3.connect(REAL_DB.as_uri() + "?mode=ro", uri=True)
-    try:
-        rows = connection.execute(
-            "SELECT ComplaintID, Address, Subject, Content, Datetime "
-            "FROM Emails ORDER BY ComplaintID DESC"
-        ).fetchall()
-        print("Database:", REAL_DB)
-        print("Existing complaint count:", len(rows))
-        addresses = sorted({row[1] for row in rows if row[1]})
-        for address in addresses:
-            matching = [row for row in rows if row[1] == address]
-            print(f"\nCustomer: {address} | Complaints: {len(matching)}")
-            for cid, _, subject, content, date in matching:
-                print(f"  ID {cid} | {date} | {subject} | {content}")
-    finally:
-        connection.close()
-
-
-# Use the permanent database in Data_manager. Importing data_manager2
-# creates complaint.db and its tables automatically if missing.
+# Allow imports from within Data_manager
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+
 from Data_manager import data_manager2 as dm
 from Data_manager.accounts import Account
 from Data_manager.admin_accounts import AdminA
@@ -48,24 +17,27 @@ from Data_manager.all_emails import Email
 from Data_manager.admin_emails import AdminE
 from Data_manager.tech_emails import TechE
 
-# Display records already in the permanent database before adding test data.
-show_real_customer_history()
 
-# Rebuild top-10 JSON snapshots using the permanent database.
-for department in ("Admin", "Tech"):
-    if not dm.refresh_top_10(department):
-        raise RuntimeError(f"Unable to initialize JSON: {department}")
-
-# ---------------- TEST RESULTS ----------------
+# ---------------- TEST SETTINGS ----------------
 
 CUSTOMER_EMAILS = [
-    "alice@test.com", "bob@test.com", "charlie@test.com",
-    "david@test.com", "emma@test.com",
+    "alice@test.com",
+    "bob@test.com",
+    "charlie@test.com",
+    "david@test.com",
+    "emma@test.com"
 ]
+
+DEPARTMENTS = {
+    "Admin": "Admin_Team",
+    "Tech": "Tech_Professionals"
+}
 
 passed = 0
 failed = 0
 
+
+# ---------------- TEST HELPERS ----------------
 
 def check(name, condition):
     global passed, failed
@@ -108,10 +80,7 @@ def get_scores(table):
 
 
 def get_status(complaint_id, department):
-    if department == "Admin":
-        table = "Admin_Team"
-    else:
-        table = "Tech_Professionals"
+    table = DEPARTMENTS[department]
 
     dm.c.execute(
         f'''
@@ -133,33 +102,48 @@ def test_accounts():
 
     admin = AdminA("admin@test.com", "admin123")
     tech = TechA("tech@test.com", "tech123")
-    customer = CustomerA("alice@test.com", "customer123")
+
+    customers = [
+        CustomerA(address, "customer123")
+        for address in CUSTOMER_EMAILS
+    ]
+
+    customers.append(
+        CustomerA("customer@test.com", "customer123")
+    )
 
     check("Admin role", admin.role == "Admin")
     check("Tech role", tech.role == "Tech")
-    check("Customer role", customer.role == "Customer")
 
-    customers = [customer] + [CustomerA(address, "customer123") for address in CUSTOMER_EMAILS[1:]]
-    # The two initial department tests also use this dedicated customer.
-    customers.append(CustomerA("customer@test.com", "customer123"))
-    for account in (admin, tech, *customers):
+    check(
+        "Customer roles",
+        all(customer.role == "Customer" for customer in customers)
+    )
+
+    for account in [admin, tech] + customers:
         existing = account.get_account()
 
         if existing is None:
             check(
-                f"Save {account.role} account",
+                f"Create {account.address}",
                 account.set_account() is True
             )
         else:
             check(
-                f"{account.role} account already exists",
-                existing[2] == account.role
+                f"Existing account {account.address}",
+                existing[0] == account.address
+                and existing[2] == account.role
             )
 
-    check(
-        "Retrieve customer account",
-        customer.get_account() is not None
-    )
+        # Verify get_account() returns the saved record
+        data = account.get_account()
+
+        check(
+            f"get_account(): {account.address}",
+            data is not None
+            and data[0] == account.address
+            and data[2] == account.role
+        )
 
     check_exception(
         "Account is abstract",
@@ -167,17 +151,24 @@ def test_accounts():
         lambda: Account("test@test.com", "123")
     )
 
-    check(
-        "Duplicate account rejected without inserting",
-        customer.set_account() is not True
+    customer = customers[0]
+
+    check_exception(
+        "Duplicate account rejected",
+        ValueError,
+        lambda: customer.set_account()
     )
 
-    # Current Account constructor prints an error instead of raising.
-    # Mark this as a genuine validation failure until Account is fixed.
     check_exception(
         "Empty address rejected",
         ValueError,
         lambda: CustomerA("", "password123")
+    )
+
+    check_exception(
+        "Empty password rejected",
+        ValueError,
+        lambda: CustomerA("test@test.com", "")
     )
 
 
@@ -200,11 +191,14 @@ def test_email():
         isinstance(email_id, int) and email_id > 0
     )
 
-    result = email.get_email()
+    data = email.get_email()
 
     check(
         "Retrieve original email",
-        result is not None and result[0] == email_id
+        data is not None
+        and data[0] == email_id
+        and data[1] == email.address
+        and data[2] == email.subject
     )
 
     check(
@@ -228,6 +222,23 @@ def test_email():
         lambda: email.add_to_AI_C_A(
             "Account Issue", 6, "Invalid"
         )
+    )
+
+    check_exception(
+        "Reject invalid email address",
+        ValueError,
+        lambda: Email("", "Test", "Content", "2026-11-10")
+    )
+
+    check_exception(
+        "Reject unsaved email retrieval",
+        ValueError,
+        lambda: Email(
+            "customer@test.com",
+            "Test",
+            "Content",
+            "2026-11-10"
+        ).get_email()
     )
 
     return email, email_id
@@ -254,9 +265,11 @@ def test_admin(email, email_id):
         admin_email.add_to_DB() == email_id
     )
 
+    data = admin_email.get_email()
+
     check(
         "Retrieve Admin complaint",
-        admin_email.get_email()[0] == email_id
+        data is not None and data[0] == email_id
     )
 
     check(
@@ -283,11 +296,12 @@ def test_admin(email, email_id):
         and admin_email.status == "Resolved"
     )
 
+    # Use the new external retrieval functions
     check(
         "Resolved Admin excluded from unresolved",
         all(
             row[0] != email_id
-            for row in admin_email.load_all_unresolved()
+            for row in dm.load_all_unresolved("Admin")
         )
     )
 
@@ -295,7 +309,7 @@ def test_admin(email, email_id):
         "Resolved Admin appears in resolved",
         any(
             row[0] == email_id
-            for row in admin_email.load_all_resolved()
+            for row in dm.load_all_resolved("Admin")
         )
     )
 
@@ -303,6 +317,14 @@ def test_admin(email, email_id):
         "Reopen Admin complaint",
         admin_email.unresolve() is True
         and admin_email.status == "Unresolved"
+    )
+
+    check(
+        "Reopened Admin appears in unresolved",
+        any(
+            row[0] == email_id
+            for row in dm.load_all_unresolved("Admin")
+        )
     )
 
     return admin_email
@@ -350,9 +372,11 @@ def test_tech():
         tech_email.add_to_DB() == email_id
     )
 
+    data = tech_email.get_email()
+
     check(
         "Retrieve Tech complaint",
-        tech_email.get_email()[0] == email_id
+        data is not None and data[0] == email_id
     )
 
     check(
@@ -368,9 +392,33 @@ def test_tech():
     )
 
     check(
+        "Resolved Tech appears in resolved",
+        any(
+            row[0] == email_id
+            for row in dm.load_all_resolved("Tech")
+        )
+    )
+
+    check(
+        "Resolved Tech excluded from unresolved",
+        all(
+            row[0] != email_id
+            for row in dm.load_all_unresolved("Tech")
+        )
+    )
+
+    check(
         "Reopen Tech complaint",
         tech_email.unresolve() is True
         and tech_email.status == "Unresolved"
+    )
+
+    check(
+        "Reopened Tech appears in unresolved",
+        any(
+            row[0] == email_id
+            for row in dm.load_all_unresolved("Tech")
+        )
     )
 
     return email_id
@@ -415,14 +463,17 @@ def test_30_complaints():
     ]
 
     created_ids = {"Admin": [], "Tech": []}
-    created_by_customer = {address: [] for address in CUSTOMER_EMAILS}
+    created_by_customer = {
+        address: [] for address in CUSTOMER_EMAILS
+    }
 
     for i, (subject, content, score, department) in enumerate(
         test_complaints
     ):
-        customer_address = CUSTOMER_EMAILS[i % len(CUSTOMER_EMAILS)]
+        address = CUSTOMER_EMAILS[i % len(CUSTOMER_EMAILS)]
+
         email = Email(
-            customer_address,
+            address,
             subject,
             content,
             f"2026-11-10 10:{i:02d}:00"
@@ -436,11 +487,7 @@ def test_30_complaints():
             else "Technical Issue"
         )
 
-        email.add_to_AI_C_A(
-            category,
-            score,
-            department
-        )
+        email.add_to_AI_C_A(category, score, department)
 
         if department == "Admin":
             complaint = AdminE(
@@ -466,12 +513,14 @@ def test_30_complaints():
             )
 
         complaint.add_to_DB()
+
         created_ids[department].append(complaint_id)
-        created_by_customer[customer_address].append(complaint_id)
+        created_by_customer[address].append(complaint_id)
 
         print(
             f"Added {i + 1:02d}/30 | "
             f"ID: {complaint_id} | "
+            f"Customer: {address} | "
             f"Department: {department} | "
             f"Priority: {score} | "
             f"{subject}"
@@ -495,10 +544,7 @@ def test_30_complaints():
 def verify_database(created_ids):
     print("\n===== DATABASE VERIFICATION =====")
 
-    for department, table in [
-        ("Admin", "Admin_Team"),
-        ("Tech", "Tech_Professionals")
-    ]:
+    for department, table in DEPARTMENTS.items():
         ids = created_ids[department]
         placeholders = ",".join("?" for _ in ids)
 
@@ -508,11 +554,11 @@ def verify_database(created_ids):
             (table, "departmental complaints")
         ]:
             dm.c.execute(
-                f"""
+                f'''
                 SELECT COUNT(*)
                 FROM {table_name}
                 WHERE ComplaintID IN ({placeholders})
-                """,
+                ''',
                 ids
             )
 
@@ -522,12 +568,12 @@ def verify_database(created_ids):
             )
 
         dm.c.execute(
-            f"""
+            f'''
             SELECT COUNT(*)
             FROM {table}
             WHERE ComplaintID IN ({placeholders})
             AND Status = 'Unresolved'
-            """,
+            ''',
             ids
         )
 
@@ -537,15 +583,100 @@ def verify_database(created_ids):
         )
 
 
-# ---------------- JSON VERIFICATION ----------------
+# ---------------- DEPARTMENT RETRIEVAL TESTS ----------------
+
+def test_department_load_functions():
+    print("\n===== DEPARTMENT RETRIEVAL TESTS =====")
+
+    for department, table in DEPARTMENTS.items():
+        top_10 = dm.load_first_10(department)
+        unresolved = dm.load_all_unresolved(department)
+        resolved = dm.load_all_resolved(department)
+
+        check(
+            f"{department}: Top 10 returns a list",
+            isinstance(top_10, list)
+        )
+
+        check(
+            f"{department}: Top 10 contains at most 10",
+            len(top_10) <= 10
+        )
+
+        check(
+            f"{department}: Top 10 matches unresolved list",
+            top_10 == unresolved[:10]
+        )
+
+        check(
+            f"{department}: Unresolved returns a list",
+            isinstance(unresolved, list)
+        )
+
+        check(
+            f"{department}: Resolved returns a list",
+            isinstance(resolved, list)
+        )
+
+        check(
+            f"{department}: Unresolved statuses correct",
+            all(row[8] == "Unresolved" for row in unresolved)
+        )
+
+        check(
+            f"{department}: Resolved statuses correct",
+            all(row[8] == "Resolved" for row in resolved)
+        )
+
+        dm.c.execute(f"SELECT COUNT(*) FROM {table}")
+        total = dm.c.fetchone()[0]
+
+        check(
+            f"{department}: All complaints accounted for",
+            len(unresolved) + len(resolved) == total
+        )
+
+        check(
+            f"{department}: Unresolved sorted correctly",
+            all(
+                (
+                    -unresolved[i][7],
+                    unresolved[i][4],
+                    unresolved[i][0]
+                ) <= (
+                    -unresolved[i + 1][7],
+                    unresolved[i + 1][4],
+                    unresolved[i + 1][0]
+                )
+                for i in range(len(unresolved) - 1)
+            )
+        )
+
+    check_exception(
+        "Reject invalid department for top 10",
+        ValueError,
+        lambda: dm.load_first_10("Invalid")
+    )
+
+    check_exception(
+        "Reject invalid department for unresolved",
+        ValueError,
+        lambda: dm.load_all_unresolved("Invalid")
+    )
+
+    check_exception(
+        "Reject invalid department for resolved",
+        ValueError,
+        lambda: dm.load_all_resolved("Invalid")
+    )
+
+
+# ---------------- JSON TESTS ----------------
 
 def verify_json():
     print("\n===== JSON VERIFICATION =====")
 
-    for department, table in [
-        ("Admin", "Admin_Team"),
-        ("Tech", "Tech_Professionals")
-    ]:
+    for department, table in DEPARTMENTS.items():
         dm.c.execute(f'''
             SELECT ComplaintID
             FROM {table}
@@ -572,17 +703,17 @@ def verify_json():
         ]
 
         check(
-            f"{department}: JSON contains top 10",
-            len(records) == 10
+            f"{department}: JSON contains correct number",
+            len(records) == len(expected_ids)
         )
 
         check(
-            f"{department}: JSON matches SQLite",
+            f"{department}: JSON matches SQLite top 10",
             actual_ids == expected_ids
         )
 
         check(
-            f"{department}: Scores sorted correctly",
+            f"{department}: JSON sorted correctly",
             all(
                 records[i]["UpdatedScore"]
                 >= records[i + 1]["UpdatedScore"]
@@ -599,93 +730,170 @@ def verify_json():
         )
 
 
+def test_json_functions():
+    print("\n===== JSON FUNCTION TESTS =====")
+
+    for department in DEPARTMENTS:
+        records = dm.load_from_JSON(department)
+
+        check(
+            f"{department}: load_from_JSON works",
+            isinstance(records, list)
+        )
+
+        check(
+            f"{department}: refresh_top_10 works",
+            dm.refresh_top_10(department) is True
+        )
+
+        check(
+            f"{department}: save_to_JSON works",
+            dm.save_to_JSON(department, records) is True
+        )
+
+    check_exception(
+        "Reject invalid JSON department",
+        ValueError,
+        lambda: dm.load_from_JSON("Invalid")
+    )
+
+    check_exception(
+        "Reject more than 10 JSON complaints",
+        ValueError,
+        lambda: dm.save_to_JSON("Admin", [{}] * 11)
+    )
+
+    check_exception(
+        "Reject non-list JSON data",
+        TypeError,
+        lambda: dm.save_to_JSON("Admin", {})
+    )
+
+    check_exception(
+        "Reject invalid complaint dictionary",
+        ValueError,
+        lambda: dm.validate_complaint({})
+    )
+
+
 # ---------------- CUSTOMER HISTORY TESTS ----------------
 
-def test_customer_history(created_ids, initial_ids, created_by_customer):
-    print("\n===== CUSTOMER HISTORY TESTS (MULTIPLE CUSTOMERS) =====")
+def test_customer_history(created_by_customer, initial_ids):
+    print("\n===== CUSTOMER HISTORY TESTS =====")
+
     for address in CUSTOMER_EMAILS:
         complaints = dm.load_customer_complaints(address)
+
+        if not isinstance(complaints, list):
+            check(f"{address}: History returns a list", False)
+            continue
+
+        actual_ids = {row[0] for row in complaints}
         expected_ids = set(created_by_customer[address])
-        actual_ids = {row[0] for row in complaints} if isinstance(complaints, list) else set()
-        check(f"{address}: history returns list", isinstance(complaints, list))
-        check(f"{address}: includes own six new complaints", expected_ids.issubset(actual_ids) and len(expected_ids) == 6)
-        check(f"{address}: no other customers' complaints", all(row[1] == address for row in complaints or []))
-        check(f"{address}: six fields and valid statuses", all(len(row) == 6 and row[5] in ("Resolved", "Unresolved") for row in complaints or []))
-        check(f"{address}: descending ComplaintID", all(complaints[i][0] > complaints[i+1][0] for i in range(len(complaints)-1)) if isinstance(complaints, list) else False)
-        for row in complaints or []:
-            dm.c.execute("SELECT AssignedTo FROM AI_Complaint_Analysis WHERE ComplaintID=?", (row[0],))
-            department = dm.c.fetchone()
-            if department:
-                check(f"{address}: status for ID {row[0]}", row[5] == (get_status(row[0], department[0]) or "Unresolved"))
+
+        check(
+            f"{address}: Contains all 6 new complaints",
+            expected_ids.issubset(actual_ids)
+            and len(expected_ids) == 6
+        )
+
+        check(
+            f"{address}: No other customer complaints",
+            all(row[1] == address for row in complaints)
+        )
+
+        check(
+            f"{address}: Each record has 6 fields",
+            all(len(row) == 6 for row in complaints)
+        )
+
+        check(
+            f"{address}: Valid statuses",
+            all(
+                row[5] in ("Resolved", "Unresolved")
+                for row in complaints
+            )
+        )
+
+        check(
+            f"{address}: ComplaintID descending",
+            all(
+                complaints[i][0] > complaints[i + 1][0]
+                for i in range(len(complaints) - 1)
+            )
+        )
+
+        # Verify status against the department table
+        correct_status = True
+
+        for complaint in complaints:
+            cid = complaint[0]
+
+            dm.c.execute('''
+                SELECT AssignedTo
+                FROM AI_Complaint_Analysis
+                WHERE ComplaintID = ?
+            ''', (cid,))
+
+            result = dm.c.fetchone()
+
+            if result is None:
+                expected_status = "Unresolved"
+            else:
+                expected_status = get_status(cid, result[0])
+
+                if expected_status is None:
+                    expected_status = "Unresolved"
+
+            if complaint[5] != expected_status:
+                correct_status = False
+
+        check(
+            f"{address}: Status matches SQLite",
+            correct_status
+        )
+
     initial = dm.load_customer_complaints("customer@test.com")
-    check("Initial customer complaints preserved", set(initial_ids).issubset({r[0] for r in initial}))
-    check("Unknown customer returns empty list", dm.load_customer_complaints("unknown@test.com") == [])
+
+    check(
+        "Initial customer complaints preserved",
+        isinstance(initial, list)
+        and set(initial_ids).issubset(
+            {row[0] for row in initial}
+        )
+    )
+
+    check(
+        "Unknown customer returns empty list",
+        dm.load_customer_complaints("unknown@test.com") == []
+    )
 
 
 # ---------------- DISPLAY CUSTOMER HISTORY ----------------
 
-def test_display_customer_history():
+def display_customer_history():
     print("\n===== CUSTOMER COMPLAINT HISTORY =====")
 
     for address in CUSTOMER_EMAILS:
-        display_one_customer_history(address)
+        complaints = dm.load_customer_complaints(address)
 
+        if not isinstance(complaints, list):
+            print(f"[ERROR] Cannot load history for {address}")
+            continue
 
-def display_one_customer_history(address):
-    complaints = dm.load_customer_complaints(address)
+        print("\n" + "=" * 50)
+        print(f"Customer: {address}")
+        print(f"Total complaints: {len(complaints)}")
+        print("=" * 50)
 
-    if complaints is None:
-        check("Customer history retrieved successfully", False)
-        return
-
-    if not complaints:
-        check("Customer history contains complaints", False)
-        return
-
-    print(f"\nCustomer: {address}")
-    print(f"Total complaints submitted: {len(complaints)}")
-    print("\n===== ALL SUBMITTED COMPLAINTS =====")
-
-    for complaint in complaints:
-        print("-" * 50)
-        print(f"Complaint ID : {complaint[0]}")
-        print(f"Address      : {complaint[1]}")
-        print(f"Subject      : {complaint[2]}")
-        print(f"Content      : {complaint[3]}")
-        print(f"Datetime     : {complaint[4]}")
-        print(f"Status       : {complaint[5]}")
-
-    print("-" * 50)
-
-    check(
-        "All complaints belong to the correct customer",
-        all(
-            complaint[1] == address
-            for complaint in complaints
-        )
-    )
-
-    check(
-        "Each displayed complaint contains 6 fields",
-        all(len(complaint) == 6 for complaint in complaints)
-    )
-
-    check(
-        "Displayed statuses are valid",
-        all(
-            complaint[5] in ("Resolved", "Unresolved")
-            for complaint in complaints
-        )
-    )
-
-    # UPDATED: Check ComplaintID descending
-    check(
-        "Displayed complaints sorted by ComplaintID descending",
-        all(
-            complaints[i][0] >= complaints[i + 1][0]
-            for i in range(len(complaints) - 1)
-        )
-    )
+        for complaint in complaints:
+            print(f"Complaint ID : {complaint[0]}")
+            print(f"Address      : {complaint[1]}")
+            print(f"Subject      : {complaint[2]}")
+            print(f"Content      : {complaint[3]}")
+            print(f"Datetime     : {complaint[4]}")
+            print(f"Status       : {complaint[5]}")
+            print("-" * 50)
 
 
 # ---------------- BATCH SCORE UPDATE TESTS ----------------
@@ -693,27 +901,10 @@ def display_one_customer_history(address):
 def test_update_all_scores():
     print("\n===== UPDATE ALL SCORES TESTS =====")
 
-    tables = ("Admin_Team", "Tech_Professionals")
-
     before = {
         table: get_scores(table)
-        for table in tables
+        for table in DEPARTMENTS.values()
     }
-
-    eligible = {}
-
-    for table in tables:
-        eligible[table] = sum(
-            1
-            for record in before[table].values()
-            if record["Status"] == "Unresolved"
-            and record["UpdatedScore"] is not None
-            and record["UpdatedScore"] < 8
-        )
-
-    print("\nEligible complaints before update:")
-    print("Admin:", eligible["Admin_Team"])
-    print("Tech:", eligible["Tech_Professionals"])
 
     result = dm.update_all_scores()
 
@@ -724,20 +915,16 @@ def test_update_all_scores():
 
     after = {
         table: get_scores(table)
-        for table in tables
+        for table in DEPARTMENTS.values()
     }
 
-    for table in tables:
-        department = (
-            "Admin" if table == "Admin_Team" else "Tech"
-        )
-
+    for department, table in DEPARTMENTS.items():
         correct_updates = True
         unchanged_resolved = True
         unchanged_maximum = True
         original_scores_unchanged = True
-
         updated_count = 0
+        eligible_count = 0
 
         for cid, old in before[table].items():
             new = after[table].get(cid)
@@ -754,6 +941,8 @@ def test_update_all_scores():
                 and old_score is not None
                 and old_score < 8
             ):
+                eligible_count += 1
+
                 if new_score == old_score + 1:
                     updated_count += 1
                 else:
@@ -766,21 +955,20 @@ def test_update_all_scores():
                 if new_score != old_score:
                     unchanged_resolved = False
 
-            if old_score == 8:
-                if new_score != 8:
-                    unchanged_maximum = False
+            if old_score == 8 and new_score != 8:
+                unchanged_maximum = False
 
             if new["PriorityScore"] != old["PriorityScore"]:
                 original_scores_unchanged = False
 
         check(
-            f"{department}: All eligible scores increased by 1",
+            f"{department}: All eligible scores increased",
             correct_updates
         )
 
         check(
-            f"{department}: Correct number of scores updated",
-            updated_count == eligible[table]
+            f"{department}: Correct number updated",
+            updated_count == eligible_count
         )
 
         check(
@@ -794,7 +982,7 @@ def test_update_all_scores():
         )
 
         check(
-            f"{department}: Original PriorityScore unchanged",
+            f"{department}: Original scores unchanged",
             original_scores_unchanged
         )
 
@@ -803,21 +991,26 @@ def test_update_all_scores():
             set(before[table]) == set(after[table])
         )
 
+        print(
+            f"{department}: {updated_count} "
+            f"complaint scores increased"
+        )
+
     verify_json()
 
 
-# ---------------- RESOLVED COMPLAINT BATCH TEST ----------------
+# ---------------- RESOLVED BATCH TEST ----------------
 
 def test_resolved_batch():
-    print("\n===== RESOLVED COMPLAINT BATCH TEST =====")
+    print("\n===== RESOLVED BATCH TEST =====")
 
     resolved_ids = {}
 
-    for department in ("Admin", "Tech"):
+    for department in DEPARTMENTS:
         email = Email(
             "customer@test.com",
             f"Resolved Test {department}",
-            "This complaint is used for testing.",
+            "Testing resolved complaint behaviour.",
             "2026-11-10 15:00:00"
         )
 
@@ -849,10 +1042,7 @@ def test_resolved_batch():
 
     before = {}
 
-    for department, table in [
-        ("Admin", "Admin_Team"),
-        ("Tech", "Tech_Professionals")
-    ]:
+    for department, table in DEPARTMENTS.items():
         dm.c.execute(
             f'''
             SELECT UpdatedScore
@@ -866,10 +1056,7 @@ def test_resolved_batch():
 
     dm.update_all_scores()
 
-    for department, table in [
-        ("Admin", "Admin_Team"),
-        ("Tech", "Tech_Professionals")
-    ]:
+    for department, table in DEPARTMENTS.items():
         dm.c.execute(
             f'''
             SELECT UpdatedScore, Status
@@ -900,7 +1087,7 @@ def run_tests():
 
     print("=" * 50)
     print("DATA MANAGER FUNCTIONAL TEST")
-    print("USING PERMANENT Data_manager/complaint.db (TEST DATA IS SAVED)")
+    print("USING ACTUAL complaint.db")
     print("=" * 50)
 
     print(f"\nDatabase: {dm.BASE_DIR / 'complaint.db'}")
@@ -918,15 +1105,18 @@ def run_tests():
 
         verify_database(created_ids)
 
+        test_department_load_functions()
+
         verify_json()
 
+        test_json_functions()
+
         test_customer_history(
-            created_ids,
-            [email_id, tech_id],
-            created_by_customer
+            created_by_customer,
+            [email_id, tech_id]
         )
 
-        test_display_customer_history()
+        display_customer_history()
 
         test_update_all_scores()
 
@@ -934,10 +1124,7 @@ def run_tests():
 
     except Exception as error:
         failed += 1
-
         print(f"\n[ERROR] Test stopped: {error}")
-
-        import traceback
         traceback.print_exc()
 
     finally:
@@ -954,11 +1141,11 @@ def run_tests():
         else:
             print("\nSOME CHECKS FAILED!")
 
-        # Close the permanent database connection after all tests.
         try:
             dm.c.close()
         except sqlite3.ProgrammingError:
             pass
+
         dm.db.close()
 
 

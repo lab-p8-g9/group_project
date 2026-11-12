@@ -290,6 +290,70 @@ def load_customer_complaints(address): #return all complaints sent by the same c
         print(f"Error loading customer complaints: {error}")
         return None
 
+
+def load_first_10(department):
+    # Retrieve top 10 unresolved complaints
+    if department == "Admin":
+        table = "Admin_Team"
+    elif department == "Tech":
+        table = "Tech_Professionals"
+    else:
+        raise ValueError("Invalid department.")
+
+    c.execute(f'''
+        SELECT *
+        FROM {table}
+        WHERE Status = 'Unresolved'
+        ORDER BY UpdatedScore DESC,
+                 Datetime ASC,
+                 ComplaintID ASC
+        LIMIT 10
+    ''')
+
+    return c.fetchall()
+
+
+def load_all_unresolved(department):
+    # Retrieve all unresolved complaints
+    if department == "Admin":
+        table = "Admin_Team"
+    elif department == "Tech":
+        table = "Tech_Professionals"
+    else:
+        raise ValueError("Invalid department.")
+
+    c.execute(f'''
+        SELECT *
+        FROM {table}
+        WHERE Status = 'Unresolved'
+        ORDER BY UpdatedScore DESC,
+                 Datetime ASC,
+                 ComplaintID ASC
+    ''')
+
+    return c.fetchall()
+
+
+def load_all_resolved(department):
+    # Retrieve all resolved complaints
+    if department == "Admin":
+        table = "Admin_Team"
+    elif department == "Tech":
+        table = "Tech_Professionals"
+    else:
+        raise ValueError("Invalid department.")
+
+    c.execute(f'''
+        SELECT *
+        FROM {table}
+        WHERE Status = 'Resolved'
+        ORDER BY UpdatedScore DESC,
+                 Datetime ASC,
+                 ComplaintID ASC
+    ''')
+
+    return c.fetchall()
+
 def update_all_scores(): #updates all UNRESOLVED complaints with scores below 8 ONLY in ADMIN_TEAM and TECH_PROFESSIONALS TABLES
     try:
         for table in ("Admin_Team", "Tech_Professionals"):

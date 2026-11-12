@@ -180,23 +180,3 @@ class TechE(Email):
 
         return True
 
-    def load_first_10(self): 
-        c.execute('''SELECT * FROM Tech_Professionals 
-                    WHERE Status = 'Unresolved'
-                    ORDER BY UpdatedScore DESC, Datetime ASC, ComplaintID ASC
-                    LIMIT 10''')
-        return c.fetchall()
-
-    def load_all_unresolved(self):
-        c.execute('''SELECT * FROM Tech_Professionals 
-                    WHERE Status = 'Unresolved'
-                    ORDER BY UpdatedScore DESC, Datetime ASC, ComplaintID ASC''')
-        results = c.fetchall()
-        return results
-
-    def load_all_resolved(self):
-        c.execute('''SELECT * FROM Tech_Professionals 
-                    WHERE Status = 'Resolved'
-                    ORDER BY UpdatedScore DESC, Datetime ASC, ComplaintID ASC''')
-        results = c.fetchall()
-        return results
