@@ -1,7 +1,7 @@
 
 import json
-from L.logic_data_process import logic_data_process
-from L.logic_deadline_classification import Logic_Deadline_Classification
+from Logic_manager.logic_data_process import logic_data_process
+from Logic_manager.logic_deadline_classification import Logic_Deadline_Classification
 
 
 class logic_main():

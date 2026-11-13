@@ -1,6 +1,6 @@
-from c_all_emails import Email
-from c_admin_emails import AdminE
-from c_tech_emails import TechE
+from Data_manager.all_emails import Email
+from Data_manager.admin_emails import AdminE
+from Data_manager.tech_emails import TechE
 from datetime import datetime, timedelta
 # ai_process classify objects into deadline classification 
 
@@ -38,12 +38,12 @@ class logic_data_process():
       content = self.__content
       priority_score = self.__priority_score
 
-      if self.__assigned_to == "Tech_Professionals":
+      if self.__assigned_to == "Tech":
             object = TechE(id, category, email_address, subject, content, current_datetime, deadline, priority_score)
             object.add_to_DB()
             object.update_score(new_priority_score)
 
-      elif self.__assigned_to == "Admin_Team":
+      elif self.__assigned_to == "Admin":
             object = AdminE(id, category, email_address, subject, content, current_datetime, deadline, priority_score)
             object.add_to_DB()
             object.update_score(new_priority_score) 
