@@ -1,7 +1,7 @@
 
 import json
-from L.logic_data_process import logic_data_process
-from L.logic_deadline_classification import Logic_Deadline_Classification
+from Logic_manager.logic_data_process import logic_data_process
+from Logic_manager.logic_deadline_classification import Logic_Deadline_Classification
 
 
 class logic_main():
@@ -27,8 +27,11 @@ class logic_main():
             )
 
             ID = process.add_emails_object()
+
             classification = Logic_Deadline_Classification(process.get_priority_score(),process.get_current_datetime())
+
             new_priority_score, deadline = (classification.classification())
+
             process.Tech_Admin_to_SQL(ID, process.get_current_datetime(), new_priority_score,deadline)
 
       
@@ -37,6 +40,5 @@ class logic_main():
 
     
     def clear_ai_sample(self):
-
         with open(self.__ai_file, "w", encoding="utf-8") as file:
             json.dump([], file, indent=4)
