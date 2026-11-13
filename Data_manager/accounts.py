@@ -5,7 +5,7 @@ from Data_manager.data_manager2 import db, c
 class Account(ABC):
     VALID_ROLES = ("Admin", "Tech", "Customer")
 
-    def __init__(self, address, password):
+    def __init__(self, address: str, password: str) -> None:
         if not isinstance(address, str) or not address.strip():
             raise ValueError("Address cannot be empty.")
 
@@ -17,18 +17,18 @@ class Account(ABC):
         self._role = self.assign_role()
 
     @property
-    def address(self):
+    def address(self) -> str:
         return self._address
 
     @property
-    def role(self):
+    def role(self) -> str:
         return self._role 
 
     @abstractmethod
-    def assign_role(self):
+    def assign_role(self) -> str:
         pass
 
-    def set_account(self): #inserts account made into complaint.db - Accounts
+    def set_account(self) -> bool: #inserts account made into complaint.db - Accounts
         if self._role not in self.VALID_ROLES:
             print("Invalid account role.")
 
@@ -54,7 +54,7 @@ class Account(ABC):
             raise
 
 
-    def get_account(self): #retrieves account info (address, pw, role) from complaint.db
+    def get_account(self) -> tuple[str, str, str] | None: #retrieves account info (address, pw, role) from complaint.db
         c.execute('''SELECT *
                     FROM Accounts 
                     WHERE Address = ?''', 

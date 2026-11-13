@@ -2,7 +2,7 @@ import sqlite3
 from Data_manager.data_manager2 import db, c
 
 class Email: #creates email
-    def __init__(self, address, subject, content, datetime):
+    def __init__(self, address: str, subject: str, content: str, datetime: str) -> None:
         if not isinstance(address, str) or not address.strip():
             raise ValueError("Invalid email address.")
 
@@ -23,43 +23,43 @@ class Email: #creates email
         self._status = "Unresolved"
 
     @property
-    def id(self):
+    def id(self) -> int | None:
         return self._id 
 
     @id.setter
-    def id(self, value):
+    def id(self, value: int | None) -> None:
         if value is not None:
             if type(value) is not int or value <= 0:
                 raise ValueError("Invalid complaint ID.")
         self._id = value
 
     @property
-    def address(self):
+    def address(self) -> str:
         return self._address
 
     @property
-    def subject(self):
+    def subject(self) -> str:
         return self._subject
 
     @property
-    def content(self):
+    def content(self) -> str:
         return self._content
 
     @property
-    def datetime(self):
+    def datetime(self) -> str:
         return self._datetime
 
     @property
-    def status(self):
+    def status(self) -> str:
         return self._status
 
     @status.setter
-    def status(self, value):
+    def status(self, value: str) -> None:
         if value not in ('Resolved', 'Unresolved'):
             raise ValueError("Invalid complaint status.")
         self._status = value
 
-    def add_to_DB(self): #save to Emails table in db
+    def add_to_DB(self) -> int: #save to Emails table in db
         try:
             c.execute('''INSERT INTO Emails(Address, Subject, Content, Datetime) 
                         VALUES(?,?,?,?)''',
@@ -72,7 +72,7 @@ class Email: #creates email
             db.rollback()
             raise
 
-    def get_email(self): #return all info of ONE email
+    def get_email(self) -> tuple | None: #return all info of ONE email
         if self.id is None:
             raise ValueError("Email has not been saved.")
         
@@ -82,7 +82,7 @@ class Email: #creates email
         data = c.fetchone()
         return data #CID, address, subject, content, datetime
 
-    def add_to_AI_C_A(self, category, ps, assignedto): #save to AI_Complaint_Analysis table in db
+    def add_to_AI_C_A(self, category: str, ps: int, assignedto: str) -> bool: #save to AI_Complaint_Analysis table in db
         if self.id is None:
             raise ValueError("Email must be saved first.")
 
