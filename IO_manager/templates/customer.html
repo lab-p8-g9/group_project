@@ -46,6 +46,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>ComplaintID</th>
                             <th>Email</th>
                             <th>Subject</th>
                             <th>Content</th>
@@ -56,11 +57,16 @@
                     <tbody>
                         {% for rows in data %}
                         <tr>
-                            <td>{{ rows.Email }}</td>
-                            <td>{{ rows.Subject }}</td>
-                            <td>{{ rows.Content }}</td>
-                            <td>
-                                <span class="complaint-status">{{ rows.Status }}</span>
+                            <td>{{ rows[0] }}</td>
+                            <td>{{ rows[1] }}</td>
+                            <td>{{ rows[2] }}</td>
+                            <td>{{ rows[3] }}</td>
+                            <td class="align-table">
+                                {% if rows[5] == 'Unresolved' %}
+                                <span class="text-unresolved">{{ rows[5] }}</span>
+                                {% else %}
+                                <span class="text-resolved">{{ rows[5] }}</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

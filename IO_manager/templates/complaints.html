@@ -40,6 +40,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>ComplaintID</th>
                             <th>Email</th>
                             <th>Subject</th>
                             <th>Content</th>
@@ -50,6 +51,7 @@
                     <tbody>
                         {% for rows in data %}
                         <tr>
+                            <td>{{ rows[0] }}</td>
                             <td>{{ rows[1] }}</td>
                             <td>{{ rows[2] }}</td>
                             <td>{{ rows[3] }}</td>

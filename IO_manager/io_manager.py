@@ -1,231 +1,48 @@
-# importing external libraries
-from flask import Flask, jsonify, render_template, request, redirect, url_for
-from AI_manager.openrouter_ai_manager import OpenRouterAIManager
-from Data_manager.customer_accounts import CustomerA
-from Data_manager.admin_accounts import AdminA
-from Data_manager.tech_accounts import TechA
-from Data_manager.data_manager2 import load_all_resolved, load_all_unresolved, load_first_10, load_customer_complaints, load_from_JSON, resolve
+from flask import Flask
+
+from IO_manager.account_gateway import DataManagerAccountGateway
+from IO_manager.activity_summary import ActivitySummary
+from IO_manager.authentication_service import AuthenticationService
+from IO_manager.complaint_service import ComplaintService
+from IO_manager.credential_validator import CredentialValidator
+from IO_manager.data_manager_complaint_gateway import DataManagerComplaintGateway
+from IO_manager.io_manager_controller import IOManager
+from IO_manager.openrouter_complaint_analyzer import OpenRouterComplaintAnalyzer
+
+
 app = Flask(__name__)
+activity_summary = ActivitySummary()
+credential_validator = CredentialValidator()
+authentication_service = AuthenticationService(DataManagerAccountGateway())
+complaint_service = ComplaintService(
+    DataManagerComplaintGateway(),
+    OpenRouterComplaintAnalyzer(),
+)
+io_manager = IOManager(
+    app,
+    authentication_service,
+    complaint_service,
+    credential_validator,
+    activity_summary,
+)
+io_manager.register_routes()
 
-# collect summary of what happened in the I/O Manager
-log = []
-def summary(updates,actions=""):
-    if(updates == "Update"):
-        log.append(actions)
-    elif(updates == "Fetch"):
-        i=1
-        print("Summary:\n")
-        for history in log:
-            print(f"{i}){history}")
-            i+=1
-
-# Validate that the input format is correct
-def validate_user_input(email, password):
-
-    if (not email or '@' not in email) and (not password or len(password) < 12 or not any(char.isdigit() for char in password) or not any(char.isupper() for char in password) or not any(char.islower() for char in password) or not any(char in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/`~" for char in password)):
-        summary("Update", "Invalid email and password")
-        return "Error: User enter an invalid email and password(min. 12 characters, 1 symbol, 1 number, 1 uppercase, 1 lowercase)"
-    # Validate email format
-    elif not email or '@' not in email:
-        # added to log to display summary at the end
-        summary("Update", "User entered an invalid email")
-        return "Error: Invalid email format."
-
-    # Validate password complexity, must contain at least 12 character, 1 uppercase and lowercase, 1 symbol and number
-    elif (not password or len(password) < 12 or not any(char.isdigit() for char in password) or not any(char.isupper() for char in password) or not any(char.islower() for char in password) or not any(char in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/`~" for char in password)):
-        # added to log to display summary at the end
-        summary("Update", "User enter a invalid password")
-        return ("Error: Password must be at least 12 characters long and include at least one number, "
-                "one uppercase letter, one lowercase letter, and one special character.")
-
-    return "Valid input."
-
-# function for repetitive alertBoxes
-def alertBox(msg):
-    return f"<script> alert('{msg}'); window.history.back();</script>"
-
-# Declare starting page as 127.0.0.1:8080 using load.html as the template
-@app.route('/')
-def home():
-    return render_template('account.html')
-
-# Head to 127.0.0.1:8080/email page using the email.html as template
-@app.route('/email')
-def emailPage():
-    return render_template('email.html')
-
-@app.route('/employeeLogin')
-def employeeLoginPage():
-    return render_template('employee.html')
-
-@app.route('/customer')
-def customerPage():
-    userEmail = request.args.get('userEmail')
-    userRole = request.args.get('userRole')
-    customer_complaint = load_customer_complaints(userEmail)
-    return render_template('customer.html', complaints = customer_complaint, email = userEmail, role = userRole)
-
-@app.route('/employee')
-def employeePage():
-    userEmail = request.args.get('userEmail')
-    userRole = request.args.get('userRole')
-    top10Complaint = load_first_10(userRole)
-    return render_template('home.html', data = top10Complaint, email = userEmail, role = userRole)
-
-@app.route('/viewComplaint')
-def viewComplaintPage():
-    userEmail = request.args.get('userEmail')
-    userRole = request.args.get('userRole')
-    complaints = load_all_unresolved(userRole)
-    complaints.extend(load_all_resolved(userRole))
-    return render_template('complaints.html', data = complaints, email = userEmail, role = userRole)
-
-# -------------------------------------
-# Account Login/ Signup functions
-# -------------------------------------
-
-# Head to 127.0.0.1:8080 page using the account.html as template
-@app.route("/Account", methods=["POST"])
-def accountPage():
-    button_clicked = request.form.get("action")
-    if button_clicked == "login" or button_clicked == "signup":
-        user_email = request.form.get("user_email")
-        password = request.form.get("user_password")
-        
-        # if user typed an invalid email and password, user will be prompted to retype a valid one
-        if(validate_user_input(user_email, password).strip() != "Valid input."):
-            print(validate_user_input(user_email, password))
-            return (f"""<script>
-                            alert("{validate_user_input(user_email, password)}");
-                            window.history.back();
-                        </script>
-                        """)
-        # if user typed in a valid email and password
-        else:
-            # added to log to display summary at the end
-            summary("Update", "User entered a valid email and password and is redirected to customer Homepage")
-            # VELYN: depending on changes on your end, but for now I calling ur account class
-            # hope it is self explainatory, the print statement also says what happened
-            # for ur get_account() - please return the email and role for me
-            userList = CustomerA(user_email, password)
-            if(button_clicked == "signup"):
-                try:
-                    userList.set_account()
-                    print("Account Created")
-                    print("Redirecting to Customer Homepage")
-                    userData = userList.get_account()
-                    return redirect(url_for('customerPage', userEmail = userData[0], userRole = userData[2]))
-                # if user tries to type in an email that already exists but used wrong password
-                except ValueError as err:
-                    if str(err) == "Account already exists.":
-                        summary("Update", "User inputted the wrong password")
-                        print("Incorrect Password")
-                        return(alertBox("Incorrect Password"))
-
-            elif(button_clicked == "login"):
-                #function to check if account exists in the database
-                userData = userList.get_account()
-                if(userData == None):
-                    return(alertBox("User does not exist"))
-                else:
-                    return redirect(url_for('customerPage', userEmail = userData[0], userPassword = userData[1], userRole = userData[2]))
-    # else if user is an employee, go to employee.html
-    elif button_clicked == "employee":
-        print("Redirecting to employee login page")
-        return redirect(url_for('employeeLoginPage'))
-
-# employee login page
-@app.route('/Home', methods=["POST"])
-def employeeHomePage():
-    user_email = request.form.get("user_email")
-    password = request.form.get("user_password")
-
-    # if user typed an invalid email and password, user will be prompted to retype a valid one
-    if(validate_user_input(user_email, password).strip() != "Valid input."):
-        print(validate_user_input(user_email, password))
-        return (f"""<script>
-                        alert("{validate_user_input(user_email, password)}");
-                        window.history.back();
-                    </script>
-                    """)
-    # if user typed in a valid email and password
-    else:
-        # added to log to display summary at the end
-        summary("Update", "Employee entered a valid email and password and is redirected to employee home page")
-        if("@admin.com" in user_email):
-            userList = AdminA(user_email, password)
-        elif("@tech.com" in user_email):
-            userList = TechA(user_email, password)
-        try:
-            userData = userList.get_account()
-            print(userList.get_account())
-            print(userData)
-            print("Login Successful")
-            print("Redirecting to Employee Homepage")
-            return redirect(url_for('employeePage', userEmail = userData[0], userPassword = userData[1], userRole = userData[2]))
-        # if user tries to type in an email that already exists but used wrong password
-        except ValueError as err:
-            if str(err) == "Account already exists.":
-                summary("Update", "User inputted an account that already exists")
-                print("Account already exists")
-                return(alertBox(err))
-        except TypeError:
-            return(alertBox("userData is empty"))
-
-# -------------------------------------
-# Send/ View / Resolve Complaint function
-# -------------------------------------
-
-@app.route('/resolved', methods=['POST'])
-def resolving():
-    resolveBtn = request.form.get('resolveBtn')
-    resolve(resolveBtn)
-    return jsonify(status="Resolved")
+# Preserve the module-level helpers and route callables for existing imports.
+log = activity_summary.log
+summary = io_manager.summary
+validate_user_input = io_manager.validate_user_input
+alertBox = io_manager.alertBox
+home = io_manager.home
+emailPage = io_manager.emailPage
+employeeLoginPage = io_manager.employeeLoginPage
+customerPage = io_manager.customerPage
+employeePage = io_manager.employeePage
+viewComplaintPage = io_manager.viewComplaintPage
+accountPage = io_manager.accountPage
+employeeHomePage = io_manager.employeeHomePage
+resolving = io_manager.resolving
+submit = io_manager.submit
 
 
-# function for user to submit their complaint
-@app.route('/submitComplaint', methods=['POST'])
-def submit():
-    # 'user_email' matches the 'name' attribute of the email input field in email.html
-    # email address, subject of email and complaint of email from html form
-    user_email = request.form.get('user_email')
-    subject = request.form.get('subject')
-    user_complaint = request.form.get('user_complaint')
-    # added to log to display summary at the end
-    summary("Update", "User has entered, his complaint")
-
-    print(f"\nThe user email is {user_email}\n")
-    print(f"Subject of email is {subject}\n")
-    print(f"Complaint: {user_complaint}\n")
-    # if user is trying to use an email that doesn't exist in the database
-    if(check_email_in_accounts(user_email) == False):
-        # added to log to display summary at the end
-        summary("Update", "User needs to re-enter an existing email")
-        print("Please input an email that exists")
-        # alert user that they are trying to complaint with an email that doesn't exist
-        return(alertBox("Email does not exist in the database"))
-    # else if email exists
-    elif(check_email_in_accounts(user_email) == True):
-        # added to log to display summary at the end
-        summary("Update", "User's email is valid, complaint is being assessed by AI now")
-        print("AI is starting its analysis")
-        # call the analyse_complaint function in AI_Manager taking subject of email and user's complaint
-        result = OpenRouterAIManager.analyse_complaint(subject, user_complaint)
-        
-            # added to log to display summary at the end
-        if(0 < result.priority_score < 9):
-            summary("Update", f"Complaint is valid with a priority score of {result.priority_score} with the category: {result.category}")
-            # reach end of program fetch summary of all the things that happened
-            summary("Fetch")
-            return (alertBox(f"Complaint is valid with a priority score of {result.priority_score} with the category: {result.category}"))
-        # else if priority score equals to 0
-        elif (result.priority_score == 0):
-            # added to log to display summary at the end
-            summary("Update", "User entered an invalid complaint, please try again")
-            print("Invalid complaint or Spam")
-            return(alertBox("Invalid complaint or Spam"))
-
-    
 if __name__ == '__main__':
-    # Added host="0.0.0.0" and changed port to 8080
     app.run(host="127.0.0.1", port=8080, debug=True, threaded=False)
