@@ -353,29 +353,22 @@ def load_all_resolved(department):
 
     return c.fetchall()
 
-def update_all_scores(): #updates all UNRESOLVED complaints with scores below 8 ONLY in ADMIN_TEAM and TECH_PROFESSIONALS TABLES
-    try:
-        for table in ("Admin_Team", "Tech_Professionals"):
-            c.execute(f'''UPDATE {table}
-                        SET UpdatedScore = UpdatedScore + 1
-                        WHERE Status = 'Unresolved'
-                        AND UpdatedScore < 8
-                        ''')
+def update_complaint_score(department, cid, new_score): #updates unresolved email US
+    if department == "Admin":
+        table = "Admin_Team"
+    elif department == "Tech":
+        table = "Tech_Professionals"
+    else:
+        raise ValueError("Invalid department.")
 
-        db.commit()
+    c.execute(f'''
+        UPDATE {table}
+        SET UpdatedScore = ?
+        WHERE ComplaintID = ?
+        AND Status = 'Unresolved'
+    ''', (new_score, cid))
 
-    except sqlite3.DatabaseError:
-        db.rollback()
-        raise
-
-
-    admin_updated = refresh_top_10("Admin")
-    tech_updated = refresh_top_10("Tech")
-
-    if not admin_updated or not tech_updated:
-        raise RuntimeError("Failed to refresh top 10 JSON files.")
-
-    return True
+    db.commit()
 
 def resolve(cid):
     try:

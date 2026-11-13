@@ -880,106 +880,51 @@ def display_customer_history():
             print("-" * 50)
 
 
-# ---------------- BATCH SCORE UPDATE TESTS ----------------
+# ---------------- INDIVIDUAL SCORE UPDATE TESTS ----------------
 
-def test_update_all_scores():
-    print("\n===== UPDATE ALL SCORES TESTS =====")
-
-    before = {
-        table: get_scores(table)
-        for table in DEPARTMENTS.values()
-    }
-
-    result = dm.update_all_scores()
-
-    check(
-        "update_all_scores returns True",
-        result is True
-    )
-
-    after = {
-        table: get_scores(table)
-        for table in DEPARTMENTS.values()
-    }
+def test_update_complaint_score(created_ids):
+    print("\n===== INDIVIDUAL SCORE UPDATE TESTS =====")
 
     for department, table in DEPARTMENTS.items():
-        correct_updates = True
-        unchanged_resolved = True
-        unchanged_maximum = True
-        original_scores_unchanged = True
-        updated_count = 0
-        eligible_count = 0
+        # Select a newly created, unresolved complaint with room to increase.
+        ids = created_ids[department]
+        placeholders = ",".join("?" for _ in ids)
+        dm.c.execute(f"""
+            SELECT ComplaintID, UpdatedScore, PriorityScore
+            FROM {table}
+            WHERE ComplaintID IN ({placeholders})
+              AND Status = 'Unresolved'
+              AND UpdatedScore < 8
+            ORDER BY ComplaintID
+            LIMIT 1
+        """, ids)
+        target = dm.c.fetchone()
+        check(f"{department}: Eligible test complaint exists", target is not None)
+        if target is None:
+            continue
 
-        for cid, old in before[table].items():
-            new = after[table].get(cid)
+        cid, old_score, priority = target
+        before = get_scores(table)
+        new_score = old_score + 1
+        dm.update_complaint_score(department, cid, new_score)
+        after = get_scores(table)
 
-            if new is None:
-                correct_updates = False
-                continue
+        check(f"{department}: Requested score saved", after[cid]["UpdatedScore"] == new_score)
+        check(f"{department}: Original PriorityScore unchanged", after[cid]["PriorityScore"] == priority)
+        check(f"{department}: Status unchanged", after[cid]["Status"] == "Unresolved")
+        check(f"{department}: Other complaints unchanged",
+              all(after[k] == before[k] for k in before if k != cid))
 
-            old_score = old["UpdatedScore"]
-            new_score = new["UpdatedScore"]
+        # The current update_complaint_score() does not refresh JSON itself.
+        # Refresh explicitly here so subsequent JSON verification is meaningful.
+        check(f"{department}: Manual JSON refresh succeeds",
+              dm.refresh_top_10(department) is True)
 
-            if (
-                old["Status"] == "Unresolved"
-                and old_score is not None
-                and old_score < 8
-            ):
-                eligible_count += 1
-
-                if new_score == old_score + 1:
-                    updated_count += 1
-                else:
-                    correct_updates = False
-            else:
-                if new_score != old_score:
-                    correct_updates = False
-
-            if old["Status"] == "Resolved":
-                if new_score != old_score:
-                    unchanged_resolved = False
-
-            if old_score == 8 and new_score != 8:
-                unchanged_maximum = False
-
-            if new["PriorityScore"] != old["PriorityScore"]:
-                original_scores_unchanged = False
-
-        check(
-            f"{department}: All eligible scores increased",
-            correct_updates
-        )
-
-        check(
-            f"{department}: Correct number updated",
-            updated_count == eligible_count
-        )
-
-        check(
-            f"{department}: Resolved scores unchanged",
-            unchanged_resolved
-        )
-
-        check(
-            f"{department}: Scores capped at 8",
-            unchanged_maximum
-        )
-
-        check(
-            f"{department}: Original scores unchanged",
-            original_scores_unchanged
-        )
-
-        check(
-            f"{department}: No complaints removed",
-            set(before[table]) == set(after[table])
-        )
-
-        print(
-            f"{department}: {updated_count} "
-            f"complaint scores increased"
-        )
-
+    check_exception(
+        "Invalid department rejected for score update",
+        ValueError,
+        lambda: dm.update_complaint_score("Invalid", 1, 5)
+    )
     verify_json()
 
 
@@ -1042,7 +987,8 @@ def test_resolved_batch():
 
         before[department] = dm.c.fetchone()[0]
 
-    dm.update_all_scores()
+    for department, table in DEPARTMENTS.items():
+        dm.update_complaint_score(department, resolved_ids[department], 7)
 
     for department, table in DEPARTMENTS.items():
         dm.c.execute(
@@ -1057,7 +1003,7 @@ def test_resolved_batch():
         score, status = dm.c.fetchone()
 
         check(
-            f"{department}: Resolved complaint not incremented",
+            f"{department}: Resolved complaint score unchanged",
             score == before[department]
             and status == "Resolved"
         )
@@ -1120,7 +1066,7 @@ def run_tests():
 
         display_customer_history()
 
-        test_update_all_scores()
+        test_update_complaint_score(created_ids)
 
         test_resolved_batch()
 
