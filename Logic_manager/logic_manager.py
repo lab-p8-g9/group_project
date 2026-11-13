@@ -1,8 +1,8 @@
 import sqlite3
 import json
 
-from logic_main import logic_main
-from data_manager2 import db, c
+from Logic_manager.logic_main import logic_main
+from Data_manager.data_manager2 import db, c
 
 
 

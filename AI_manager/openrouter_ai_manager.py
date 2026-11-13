@@ -22,14 +22,14 @@ class OpenRouterAIManager(AIManager):
         
         # Encapsulated Business Logic (Formatted mapping for the Data Manager)
         self._team_assignment_rules = {
-            "Technical Support": "Tech_Professionals",
-            "Billing and Payment": "Tech_Professionals",
-            "Security and Fraud": "Tech_Professionals",
-            "Refund": "Admin_Team",
-            "Product/Service Quality": "Admin_Team",
-            "Delivery & Shipping": "Admin_Team",
-            "Account": "Admin_Team",
-            "General Inquiry": "Admin_Team",
+            "Technical Support": "Tech",
+            "Billing and Payment": "Tech",
+            "Security and Fraud": "Tech",
+            "Refund": "Admin",
+            "Product/Service Quality": "Admin",
+            "Delivery & Shipping": "Admin",
+            "Account": "Admin",
+            "General Inquiry": "Admin",
             "Spam": "Spam"
         }
 
@@ -44,7 +44,21 @@ class OpenRouterAIManager(AIManager):
             raw_str = raw_str[:-3]
         return raw_str.strip()
 
-    def analyse_complaint(self, subject: str, user_complaint: str, max_retries: int = 3) -> list:
+    def _log_to_json(self, email, subject, user_complaint, category, priority, assigned_to):
+        """Helper method to write the AI's output to a JSON file for the Logic Manager."""
+        output_data = {
+            "email_address": email,
+            "subject": subject,
+            "content": user_complaint,
+            "category": category,
+            "priority_score": priority,
+            "assigned_to": assigned_to
+        }
+        
+        with open("ai_output.json", "w") as json_file:
+            json.dump([output_data], json_file, indent=4)
+
+    def analyse_complaint(self, email: str, subject: str, user_complaint: str, max_retries: int = 3): #added email parameter to analyse_complaint method
         prompt = f"SUBJECT: {subject}\nBODY: {user_complaint}"
         
         for attempt in range(max_retries):
@@ -83,24 +97,55 @@ class OpenRouterAIManager(AIManager):
                     logging.warning(f"Schema validation failed on attempt {attempt + 1}.")
                     continue 
                 
-                # Assign team based on the validated category
                 category = ai_dictionary["category"]
-                assigned_to = self._team_assignment_rules.get(category, "Admin")
+                priority = ai_dictionary["priority_score"]
+                reasoning = ai_dictionary["reasoning"]
+                assigned_to = self._team_assignment_rules.get(category, "Admin") #checks if Tech is in mapping, else defaults to Admin team
+                
+                self._log_to_json(email, subject, user_complaint, category, priority, assigned_to)
                 
                 return [
                     category,
-                    ai_dictionary["priority_score"], 
-                    ai_dictionary["reasoning"],
+                    priority, 
+                    reasoning,
                     assigned_to 
                 ]
 
             except json.JSONDecodeError:
                 logging.warning(f"JSON parsing failed on attempt {attempt + 1}.")
             except Exception as e:
-                # 1. Network/API errors should immediately break the loop or raise here
                 logging.error(f"API Connection error: {e}")
                 raise AIConnectionError(f"Failed to connect to OpenRouter: {e}")
 
-        # Graceful Failure State: Raise exception cleanly instead of hard-coding a fake response
         logging.error("AI returned malformed data after maximum retries.")
         raise SchemaValidationError("Failed to get valid JSON schema from OpenRouter.")
+
+if __name__ == "__main__":
+    # 1. Import the Logic Manager specifically for this test
+
+    from Logic_manager.logic_main import logic_main
+
+    print("--- STARTING AI TO LOGIC INTEGRATION TEST ---")
+        
+    # 2. Run your AI Manager to generate the JSON log
+    ai_system = OpenRouterAIManager()
+        
+    # ---> UPDATE THIS LINE <---
+    test_email = "customer@test.com"
+    test_subject = "System crashing"
+    test_content = "The server returns a 500 error every time I try to log in."
+        
+    print("1. AI is analyzing the complaint...")
+    result = ai_system.analyse_complaint(test_email, test_subject, test_content)
+        
+    print(f"   AI Finished. Category: {result[0]}, Priority Score: {result[1]}, Assigned to: {result[3]}")
+        
+    # 3. Trigger the Logic Manager to read the JSON your AI just created
+    print("\n2. Sending data to Logic Manager...")
+    try:
+        process = logic_main("ai_output.json")
+        process.process_ai_sample() 
+    except Exception as e:
+        print(f"Logic Manager encountered an error: {e}")
+
+    print("\n--- INTEGRATION TEST COMPLETE ---")
