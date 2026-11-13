@@ -80,7 +80,7 @@ class TechE(Email):
                     WHERE ComplaintID = ?''', (self.id,))
         return c.fetchone()
 
-    def update_score(self) -> bool:
+    def update_score(self, us) -> bool: 
         try:
             c.execute(
                 '''SELECT Status, UpdatedScore
@@ -100,7 +100,7 @@ class TechE(Email):
                 self._us = current_score
                 return False
 
-            new_score = current_score + 1
+            new_score = us
 
             c.execute(
                 '''UPDATE Tech_Professionals
