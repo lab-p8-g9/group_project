@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from IO_manager.activity_summary import ActivitySummary
@@ -52,11 +54,17 @@ class IOManager:
         elif result == "Error: Invalid email format.":
             self.summary("Update", "User entered an invalid email")
         elif result.startswith("Error: Password must be"):
-            self.summary("Update", "User enter a invalid password")
+            self.summary("Update", "User enter an invalid password")
         return result
 
     def alertBox(self, msg):
         return f"<script> alert('{msg}'); window.history.back();</script>"
+
+    def alert_and_redirect(self, message, destination):
+        return (
+            f"<script>alert({json.dumps(message)});"
+            f"window.location.replace({json.dumps(destination)});</script>"
+        )
 
     def home(self):
         return render_template('account.html')
@@ -79,6 +87,7 @@ class IOManager:
         )
 
     def employeePage(self):
+        self.summary("Fetch")
         userEmail = request.args.get('userEmail')
         userRole = request.args.get('userRole')
         top10Complaint = self.complaint_service.employee_preview(userRole)
@@ -169,11 +178,6 @@ class IOManager:
                             window.history.back();
                         </script>
                         """
-
-        self.summary(
-            "Update",
-            "Employee entered a valid email and password and is redirected to employee home page",
-        )
         try:
             userData = self.authentication_service.employee_account(
                 user_email,
@@ -185,20 +189,22 @@ class IOManager:
                     password,
                 )
             )
-            print(userData)
             print("Login Successful")
             print("Redirecting to Employee Homepage")
-            return redirect(
-                url_for(
-                    'employeePage',
-                    userEmail=userData[0],
-                    userPassword=userData[1],
-                    userRole=userData[2],
-                )
+            destination = url_for(
+                'employeePage',
+                userEmail=userData[0],
+                userPassword=userData[1],
+                userRole=userData[2],
             )
+            if userData[2] == "Admin":
+                return self.alert_and_redirect(
+                    "Please view the terminal to view summary of customer Action",
+                    destination,
+                )
+            return redirect(destination)
         except ValueError as err:
             if str(err) == "Account already exists.":
-                self.summary("Update", "User inputted an account that already exists")
                 print("Account already exists")
                 return self.alertBox(err)
         except TypeError:
