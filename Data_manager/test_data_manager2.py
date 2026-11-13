@@ -988,8 +988,15 @@ def test_resolved_batch():
         before[department] = dm.c.fetchone()[0]
 
     for department, table in DEPARTMENTS.items():
-        dm.update_complaint_score(department, resolved_ids[department], 7)
-
+        check_exception(
+                f"{department}: Cannot update resolved complaint",
+                ValueError,
+                lambda: dm.update_complaint_score(
+                    department,
+                    resolved_ids[department],
+                    7
+                ))
+        
     for department, table in DEPARTMENTS.items():
         dm.c.execute(
             f'''
