@@ -353,7 +353,7 @@ def load_all_resolved(department):
 
     return c.fetchall()
 
-def update_complaint_score(department, cid, new_score): #updates unresolved email US
+def update_complaint_score(department, cid, new_score):
     if department == "Admin":
         table = "Admin_Team"
     elif department == "Tech":
@@ -361,14 +361,30 @@ def update_complaint_score(department, cid, new_score): #updates unresolved emai
     else:
         raise ValueError("Invalid department.")
 
-    c.execute(f'''
-        UPDATE {table}
-        SET UpdatedScore = ?
-        WHERE ComplaintID = ?
-        AND Status = 'Unresolved'
-    ''', (new_score, cid))
+    if type(new_score) is not int or not 1 <= new_score <= 8:
+        raise ValueError("Priority score must be between 1 and 8.")
 
-    db.commit()
+    try:
+        c.execute(f'''
+            UPDATE {table}
+            SET UpdatedScore = ?
+            WHERE ComplaintID = ?
+            AND Status = 'Unresolved'
+        ''', (new_score, cid))
+
+        if c.rowcount == 0:
+            raise ValueError("Complaint not found or already resolved.")
+
+        db.commit()
+
+    except (sqlite3.DatabaseError, ValueError):
+        db.rollback()
+        raise
+
+    if not refresh_top_10(department):
+        raise RuntimeError("JSON refresh failed after score update.")
+
+    return True
 
 def resolve(cid):
     try:
