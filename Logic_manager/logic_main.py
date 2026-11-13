@@ -29,7 +29,7 @@ class logic_main():
             ID = process.add_emails_object()
             classification = Logic_Deadline_Classification(process.get_priority_score(),process.get_current_datetime())
             new_priority_score, deadline = (classification.classification())
-            process.Tech_Admin_to_SQL(ID, process.get_current_datetime(), new_priority_score,deadline)
+            process.add_admin_tech_object(ID, process.get_current_datetime(), new_priority_score,deadline)
 
       
         self.clear_ai_sample()
