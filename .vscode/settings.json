@@ -2,6 +2,7 @@
     "python.analysis.extraPaths": [
         ".",
         "./Data_manager",
-        "./AI_manager"
+        "./AI_manager",
+        "./Logic_manager"
     ]
 }

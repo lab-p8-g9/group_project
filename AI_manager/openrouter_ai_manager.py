@@ -6,6 +6,7 @@ from AI_manager.schema_validator import SchemaValidator
 from AI_manager.ai_connection_error import AIConnectionError
 from AI_manager.schema_validation_error import SchemaValidationError
 from AI_manager.api_config import APIConfig 
+from Logic_manager.logic_main import logic_main
 
 class OpenRouterAIManager(AIManager):
     def __init__(self):
@@ -100,10 +101,12 @@ class OpenRouterAIManager(AIManager):
                 category = ai_dictionary["category"]
                 priority = ai_dictionary["priority_score"]
                 reasoning = ai_dictionary["reasoning"]
-                assigned_to = self._team_assignment_rules.get(category, "Admin") #checks if Tech is in mapping, else defaults to Admin team
+                assigned_to = self._team_assignment_rules.get(category, "Admin") 
                 
                 self._log_to_json(email, subject, user_complaint, category, priority, assigned_to)
                 
+                process = logic_main("ai_output.json") # to pass to 
+                process.process_ai_sample()
                 return [
                     category,
                     priority, 
@@ -119,33 +122,3 @@ class OpenRouterAIManager(AIManager):
 
         logging.error("AI returned malformed data after maximum retries.")
         raise SchemaValidationError("Failed to get valid JSON schema from OpenRouter.")
-
-if __name__ == "__main__":
-    # 1. Import the Logic Manager specifically for this test
-
-    from Logic_manager.logic_main import logic_main
-
-    print("--- STARTING AI TO LOGIC INTEGRATION TEST ---")
-        
-    # 2. Run your AI Manager to generate the JSON log
-    ai_system = OpenRouterAIManager()
-        
-    # ---> UPDATE THIS LINE <---
-    test_email = "customer@test.com"
-    test_subject = "System crashing"
-    test_content = "The server returns a 500 error every time I try to log in."
-        
-    print("1. AI is analyzing the complaint...")
-    result = ai_system.analyse_complaint(test_email, test_subject, test_content)
-        
-    print(f"   AI Finished. Category: {result[0]}, Priority Score: {result[1]}, Assigned to: {result[3]}")
-        
-    # 3. Trigger the Logic Manager to read the JSON your AI just created
-    print("\n2. Sending data to Logic Manager...")
-    try:
-        process = logic_main("ai_output.json")
-        process.process_ai_sample() 
-    except Exception as e:
-        print(f"Logic Manager encountered an error: {e}")
-
-    print("\n--- INTEGRATION TEST COMPLETE ---")
