@@ -48,6 +48,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>ComplaintID</th>
                             <th>Email</th>
                             <th>Subject</th>
                             <th>Content</th>
@@ -58,17 +59,18 @@
                     <tbody>
                         {% for rows in data %}
                         <tr>
-                            <td>{{ rows[1] }}</td>
-                            <td>{{ rows[2] }}</td>
-                            <td>{{ rows[3] }}</td>
+                            <td>{{ rows.ComplaintID }}</td>
+                            <td>{{ rows.Address }}</td>
+                            <td>{{ rows.Category }}</td>
+                            <td>{{ rows.Content }}</td>
                             <td class="align-table">
-                                {% if rows[8] == 'Unresolved' %}
+                                {% if rows.Status == 'Unresolved' %}
                                     <form class="resolve-form" action="{{ url_for('resolving') }}" method="POST">
-                                        <input type="hidden" name="resolveBtn" value="{{ rows[0] }}">
-                                        <button type="submit" class="btn-unresolved">{{ rows[8] }}</button>
+                                        <input type="hidden" name="resolveBtn" value="{{ rows.ComplaintID }}">
+                                        <button type="submit" class="btn-unresolved">{{ rows.Status }}</button>
                                     </form>
                                 {% else %}
-                                    <span class="text-resolved">{{ rows[8] }}</span>
+                                    <span class="text-resolved">{{ rows.Status }}</span>
                                 {% endif %}
                             </td>
                         </tr>

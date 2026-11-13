@@ -1,4 +1,5 @@
 from AI_manager.ai_manager import AIManager
+from Logic_manager.logic_main import logic_main
 
 class OfflineAIManager(AIManager):
     # Inherits from BaseAIManager to satisfy OOP Polymorphism requirements.
@@ -25,5 +26,8 @@ class OfflineAIManager(AIManager):
         
         # The offline manager MUST also create the JSON file for the Logic Manager!
         self._log_to_json(email, subject, user_complaint, category, priority, assigned_to)
-        
+
+        process = logic_main("ai_output.json")
+        process.process_ai_sample()   
+             
         return [category, priority, reasoning, assigned_to]

@@ -1,16 +1,5 @@
 [
     {
-        "ComplaintID": 11,
-        "Address": "david@test.com",
-        "Category": "Technical Issue",
-        "Content": "Company server is unavailable",
-        "Datetime": "2026-11-10 10:08:00",
-        "Deadline": "2026-11-12 10:00:00",
-        "PriorityScore": 8,
-        "UpdatedScore": 8,
-        "Status": "Unresolved"
-    },
-    {
         "ComplaintID": 15,
         "Address": "charlie@test.com",
         "Category": "Technical Issue",
@@ -18,17 +7,6 @@
         "Datetime": "2026-11-10 10:12:00",
         "Deadline": "2026-11-12 10:00:00",
         "PriorityScore": 8,
-        "UpdatedScore": 8,
-        "Status": "Unresolved"
-    },
-    {
-        "ComplaintID": 27,
-        "Address": "emma@test.com",
-        "Category": "Technical Issue",
-        "Content": "Unable to connect to database",
-        "Datetime": "2026-11-10 10:24:00",
-        "Deadline": "2026-11-12 10:00:00",
-        "PriorityScore": 6,
         "UpdatedScore": 8,
         "Status": "Unresolved"
     },
@@ -107,6 +85,28 @@
         "Deadline": "2026-11-12 10:00:00",
         "PriorityScore": 3,
         "UpdatedScore": 5,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 9,
+        "Address": "bob@test.com",
+        "Category": "Technical Issue",
+        "Content": "Internet connection is slow",
+        "Datetime": "2026-11-10 10:06:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 2,
+        "UpdatedScore": 4,
+        "Status": "Unresolved"
+    },
+    {
+        "ComplaintID": 17,
+        "Address": "emma@test.com",
+        "Category": "Technical Issue",
+        "Content": "Keyboard keys are not working",
+        "Datetime": "2026-11-10 10:14:00",
+        "Deadline": "2026-11-12 10:00:00",
+        "PriorityScore": 1,
+        "UpdatedScore": 3,
         "Status": "Unresolved"
     }
 ]

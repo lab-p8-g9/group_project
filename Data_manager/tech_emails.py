@@ -3,7 +3,7 @@ from Data_manager.all_emails import Email
 from Data_manager.data_manager2 import db, c, refresh_top_10
 
 class TechE(Email):
-    def __init__(self, id, category, address, subject, content, datetime, deadline, ps):
+    def __init__(self, id: int | None, category: str, address: str, subject: str, content: str, datetime: str, deadline: str, ps: int) -> None:
 
         super().__init__(address, subject, content, datetime)
 
@@ -20,22 +20,22 @@ class TechE(Email):
         self._us = ps
 
     @property
-    def category(self):
+    def category(self) -> str:
         return self._category
 
     @property
-    def deadline(self):
+    def deadline(self) -> str:
         return self._deadline
 
     @property
-    def ps(self):
+    def ps(self) -> int:
         return self._ps
 
     @property
-    def us(self):
+    def us(self) -> int:
         return self._us
 
-    def add_to_DB(self): #adds email to Tech_Professionals table in db
+    def add_to_DB(self) -> int: #adds email to Tech_Professionals table in db
         if self.id is None:
             raise ValueError("Original email must be saved first.")
 
@@ -75,12 +75,12 @@ class TechE(Email):
 
         return self.id
 
-    def get_email(self): #retrieves all info for ONE email
+    def get_email(self) -> tuple | None: #retrieves all info for ONE email
         c.execute('''SELECT * FROM Tech_Professionals 
                     WHERE ComplaintID = ?''', (self.id,))
         return c.fetchone()
 
-    def update_score(self):
+    def update_score(self) -> bool:
         try:
             c.execute(
                 '''SELECT Status, UpdatedScore

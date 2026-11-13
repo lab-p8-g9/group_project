@@ -70,7 +70,7 @@ db.commit()
 
 # ---------------- VALIDATION ----------------
 
-def validate_complaint(complaint): #for own usage 
+def validate_complaint(complaint: dict) -> bool: #for own usage 
     if not isinstance(complaint, dict):
         raise TypeError("Complaint must be a dictionary.")
 
@@ -114,7 +114,7 @@ def validate_complaint(complaint): #for own usage
 
 # ---------------- JSON OPERATIONS ----------------
 
-def save_to_JSON(department, complaints): #for own usage 
+def save_to_JSON(department: str, complaints: list[dict]) -> bool: #for own usage 
     if department not in JSON_FILES:
         raise ValueError("Invalid department.")
 
@@ -160,7 +160,7 @@ def save_to_JSON(department, complaints): #for own usage
             except OSError as error:
                 print(f"Temporary file cleanup warning: {error}")
 
-def load_from_JSON(department): # 'Admin' or 'Tech'
+def load_from_JSON(department: str) -> list[dict] | None: # 'Admin' or 'Tech'
     if department not in JSON_FILES:
         raise ValueError("Invalid department.")
 
@@ -193,7 +193,7 @@ def load_from_JSON(department): # 'Admin' or 'Tech'
         print(f"Error loading JSON: {error}")
         return None
 
-def refresh_top_10(department): #for own usage 
+def refresh_top_10(department: str) -> bool: #for own usage 
     tables = {
         "Admin": "Admin_Team",
         "Tech": "Tech_Professionals"
@@ -230,7 +230,7 @@ def refresh_top_10(department): #for own usage
 
 #----------------- SQL OPERATIONS  ----------------
 
-def load_customer_complaints(address): #return all complaints sent by the same customer/address
+def load_customer_complaints(address: str) -> list[list] | None: #return all complaints sent by the same customer/address
     try:
         ans = []
         #retrieving complaintID, address, subject, content, datetime
@@ -291,7 +291,7 @@ def load_customer_complaints(address): #return all complaints sent by the same c
         return None
 
 
-def load_first_10(department):
+def load_first_10(department: str) -> list[tuple]:
     # Retrieve top 10 unresolved complaints
     if department == "Admin":
         table = "Admin_Team"
@@ -313,7 +313,7 @@ def load_first_10(department):
     return c.fetchall()
 
 
-def load_all_unresolved(department):
+def load_all_unresolved(department: str) -> list[tuple]:
     # Retrieve all unresolved complaints
     if department == "Admin":
         table = "Admin_Team"
@@ -333,7 +333,7 @@ def load_all_unresolved(department):
 
     return c.fetchall()
 
-def load_all_resolved(department):
+def load_all_resolved(department: str) -> list[tuple]:
     # Retrieve all resolved complaints
     if department == "Admin":
         table = "Admin_Team"
@@ -353,7 +353,7 @@ def load_all_resolved(department):
 
     return c.fetchall()
 
-def update_complaint_score(department, cid, new_score):
+def update_complaint_score(department: str, cid: int, new_score: int) -> None: #updates unresolved email US
     if department == "Admin":
         table = "Admin_Team"
     elif department == "Tech":
@@ -361,32 +361,19 @@ def update_complaint_score(department, cid, new_score):
     else:
         raise ValueError("Invalid department.")
 
-    if type(new_score) is not int or not 1 <= new_score <= 8:
-        raise ValueError("Priority score must be between 1 and 8.")
+    c.execute(f'''
+        UPDATE {table}
+        SET UpdatedScore = ?
+        WHERE ComplaintID = ?
+        AND Status = 'Unresolved'
+    ''', (new_score, cid))
 
-    try:
-        c.execute(f'''
-            UPDATE {table}
-            SET UpdatedScore = ?
-            WHERE ComplaintID = ?
-            AND Status = 'Unresolved'
-        ''', (new_score, cid))
+    if c.rowcount == 0:
+        raise ValueError("Complaint not found or already resolved.")
 
-        if c.rowcount == 0:
-            raise ValueError("Complaint not found or already resolved.")
+    db.commit()
 
-        db.commit()
-
-    except (sqlite3.DatabaseError, ValueError):
-        db.rollback()
-        raise
-
-    if not refresh_top_10(department):
-        raise RuntimeError("JSON refresh failed after score update.")
-
-    return True
-
-def resolve(cid):
+def resolve(cid: int) -> bool:
     try:
         # Find which department the complaint belongs to
         c.execute('''SELECT AssignedTo
