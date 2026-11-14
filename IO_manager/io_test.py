@@ -1,13 +1,18 @@
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from flask import Flask
+
+from AI_manager.ai_connection_error import AIConnectionError
+from AI_manager.schema_validation_error import SchemaValidationError
 from IO_manager.account_gateway import DataManagerAccountGateway
 from IO_manager.activity_summary import ActivitySummary
 from IO_manager.authentication_service import AuthenticationService
 from IO_manager.complaint_service import ComplaintService
 from IO_manager.credential_validator import CredentialValidator
+from IO_manager.io_manager_controller import IOManager
 from IO_manager.io_manager_interfaces import (
     AccountGateway,
     ComplaintAnalyzer,
@@ -197,6 +202,42 @@ class ComplaintServiceTests(unittest.TestCase):
 
     def test_loads_employee_preview(self):
         self.assertEqual(self.service.employee_preview("Admin"), self.gateway.unresolved)
+
+
+class ComplaintSubmissionTests(unittest.TestCase):
+    def submit_with_error(self, error):
+        app = Flask(__name__)
+        activity_summary = ActivitySummary()
+        complaint_service = Mock()
+        complaint_service.analyze_complaint.side_effect = error
+        controller = IOManager(
+            app,
+            None,
+            complaint_service,
+            None,
+            activity_summary,
+        )
+
+        with app.test_request_context(
+            "/submitComplaint",
+            method="POST",
+            data={"subject": "Subject", "user_complaint": "Complaint"},
+        ):
+            response = controller.submit()
+
+        return response, activity_summary.log
+
+    def test_handles_ai_connection_error(self):
+        response, log = self.submit_with_error(AIConnectionError("offline"))
+
+        self.assertIn("AI service is unavailable", response)
+        self.assertIn("AI service connection failed during complaint analysis", log)
+
+    def test_handles_schema_validation_error(self):
+        response, log = self.submit_with_error(SchemaValidationError("invalid response"))
+
+        self.assertIn("could not analyze this complaint", response)
+        self.assertIn("AI returned invalid data during complaint analysis", log)
 
 
 class OpenRouterAnalyzerTests(unittest.TestCase):

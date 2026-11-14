@@ -2,6 +2,8 @@ import json
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
+from AI_manager.ai_connection_error import AIConnectionError
+from AI_manager.schema_validation_error import SchemaValidationError
 from IO_manager.activity_summary import ActivitySummary
 from IO_manager.credential_validator import CredentialValidator
 from IO_manager.io_manager_interfaces import AuthenticationUseCase, ComplaintUseCase
@@ -220,18 +222,25 @@ class IOManager:
         user_complaint = request.form.get('user_complaint')
         self.summary("Update", "User has entered, his complaint")
         print("analyzing complaint")
-        result = self.complaint_service.analyze_complaint(subject, user_complaint)
-        print("analyze done")
-        if 0 < result[1] < 9:
-            self.summary(
-                "Update",
-                f"Complaint is valid with a priority score of {result[1]} with the category: {result[0]}",
-            )
-            self.summary("Fetch")
-            return self.alertBox(
-                f"Complaint is valid with a priority score of {result[1]} with the category: {result[0]}"
-            )
-        if result[1] == 0:
-            self.summary("Update", "User entered an invalid complaint, please try again")
-            print("Invalid complaint or Spam")
-            return self.alertBox("Invalid complaint or Spam")
+        try:
+            result = self.complaint_service.analyze_complaint(subject, user_complaint)
+            print("analyze done")
+            if 0 < result[1] < 9:
+                self.summary(
+                    "Update",
+                    f"Complaint is valid with a priority score of {result[1]} with the category: {result[0]}",
+                )
+                self.summary("Fetch")
+                return self.alertBox(
+                    f"Complaint is valid with a priority score of {result[1]} with the category: {result[0]}"
+                )
+            if result[1] == 0:
+                self.summary("Update", "User entered an invalid complaint, please try again")
+                print("Invalid complaint or Spam")
+                return self.alertBox("Invalid complaint or Spam")
+        except AIConnectionError:
+            self.summary("Update", "AI service connection failed during complaint analysis")
+            return self.alertBox("The AI service is unavailable. Please try again later.")
+        except SchemaValidationError:
+            self.summary("Update", "AI returned invalid data during complaint analysis")
+            return self.alertBox("The AI could not analyze this complaint. Please try again.")
