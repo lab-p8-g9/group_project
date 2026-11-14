@@ -1,7 +1,5 @@
 from Logic_manager.logic_deadline_classification import Logic_Deadline_Classification
 from Data_manager.data_manager2 import load_all_unresolved, update_complaint_score
-from Data_manager.tech_emails import TechE
-from Data_manager.admin_emails import AdminE
 
 
 class recalculate_logic_score:

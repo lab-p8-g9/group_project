@@ -1,6 +1,3 @@
-import sqlite3
-import json
-
 from Logic_manager.logic_main import logic_main
 from Data_manager.data_manager2 import db, c
 
