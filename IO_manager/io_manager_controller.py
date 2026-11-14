@@ -244,3 +244,6 @@ class IOManager:
         except SchemaValidationError:
             self.summary("Update", "AI returned invalid data during complaint analysis")
             return self.alertBox("The AI could not analyze this complaint. Please try again.")
+        except TypeError:
+            self.summary("Update", "User tried to send complaint without logging in")
+            return self.alertBox("Missing Email, please login first")
