@@ -30,8 +30,7 @@ class logic_data_process():
          return self.__current_datetime
 
 
-
-    def Tech_Admin_to_SQL(self, id, current_datetime, new_priority_score, deadline):
+    def add_admin_tech_object(self, id, current_datetime, new_priority_score, deadline):
       category = self.__category
       email_address = self.__email_address
       subject = self.__subject
