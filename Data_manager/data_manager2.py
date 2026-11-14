@@ -353,7 +353,13 @@ def load_all_resolved(department: str) -> list[tuple]:
 
     return c.fetchall()
 
-def update_complaint_score(department: str, cid: int, new_score: int) -> None: #updates unresolved email US
+
+def update_complaint_score(
+    department: str,
+    cid: int,
+    new_score: int
+) -> None:
+    # Determine the relevant department table
     if department == "Admin":
         table = "Admin_Team"
     elif department == "Tech":
@@ -361,17 +367,37 @@ def update_complaint_score(department: str, cid: int, new_score: int) -> None: #
     else:
         raise ValueError("Invalid department.")
 
-    c.execute(f'''
-        UPDATE {table}
-        SET UpdatedScore = ?
-        WHERE ComplaintID = ?
-        AND Status = 'Unresolved'
-    ''', (new_score, cid))
+    # Validate the new priority score
+    if type(new_score) is not int or not 1 <= new_score <= 8:
+        raise ValueError("Priority score must be between 1 and 8.")
 
-    if c.rowcount == 0:
-        raise ValueError("Complaint not found or already resolved.")
+    try:
+        # Update only unresolved complaints
+        c.execute(f'''
+            UPDATE {table}
+            SET UpdatedScore = ?
+            WHERE ComplaintID = ?
+            AND Status = 'Unresolved'
+        ''', (new_score, cid))
 
-    db.commit()
+        # Reject nonexistent or resolved complaints
+        if c.rowcount == 0:
+            raise ValueError(
+                "Complaint not found or already resolved."
+            )
+
+        db.commit()
+
+    except (sqlite3.DatabaseError, ValueError):
+        db.rollback()
+        raise
+
+    # Automatically refresh the department's top 10 JSON
+    if not refresh_top_10(department):
+        raise RuntimeError(
+            f"Priority updated, but {department} JSON refresh failed."
+        )
+
 
 def resolve(cid: int) -> bool:
     try:
