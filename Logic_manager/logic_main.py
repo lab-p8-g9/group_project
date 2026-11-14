@@ -1,10 +1,9 @@
-import json
 from datetime import datetime
-from importlib import import_module
-import re
+from importlib import import_module #strategy
+import re  #strategy
 from Logic_manager.logic_process import logic_process
 from Logic_manager.logic_email_process import logic_email_process
-
+from Data_manager.json_handling import json_handling
 
 class logic_main:
 
@@ -14,14 +13,13 @@ class logic_main:
 
     def process_ai_sample(self):
 
-        with open(self.__ai_file, "r", encoding="utf-8") as file:
-            samples = json.load(file)
+        file = json_handling(self.__ai_file)
+        sample = file.read()
 
-        for item in samples:
 
-            current_datetime = datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+        for item in sample:
+
+            current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
             email_process = logic_email_process(
@@ -33,15 +31,16 @@ class logic_main:
                 item["priority_score"],
                 item["assigned_to"]
             )
+            
+            strategy_class = self.get_strategy(item["assigned_to"])
+
+            if strategy_class is None:
+                raise ValueError(f"Unknown department: {item['assigned_to']}")
 
             email_id = email_process.process_data()
 
 
             new_score, deadline = email_process.get_classified_results()
-            strategy_class = self.get_strategy(item["assigned_to"])
-
-            if strategy_class is None:
-                raise ValueError(f"Unknown department: {item['assigned_to']}")
 
             department_process = strategy_class(
                 item["email_address"],
@@ -59,15 +58,10 @@ class logic_main:
 
             department_process.process_data()
 
-        self.clear_ai_sample()
+        file.clear()
 
         print("AI Sample processed Successfully!")
 
-
-    def clear_ai_sample(self):
-
-        with open(self.__ai_file, "w", encoding="utf-8") as file:
-            json.dump([], file, indent=4)
 
 
     def get_strategy(self, assigned_to):
@@ -77,7 +71,7 @@ class logic_main:
             if not re.fullmatch(r"[a-z][a-z0-9_]*", department):
                 raise ValueError(f"Invalid department: {assigned_to}")
 
-            module_name = f"Logic_manager.logic_{department}_process"
+            module_name = f"Logic_manager_copy.logic_{department}_process"
             class_name = f"logic_{department}_process"
 
             try:
