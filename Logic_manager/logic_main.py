@@ -77,7 +77,7 @@ class logic_main:
             if not re.fullmatch(r"[a-z][a-z0-9_]*", department):
                 raise ValueError(f"Invalid department: {assigned_to}")
 
-            module_name = f"Logic_manager_copy.logic_{department}_process"
+            module_name = f"Logic_manager.logic_{department}_process"
             class_name = f"logic_{department}_process"
 
             try:
