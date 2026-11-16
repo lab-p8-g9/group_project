@@ -36,7 +36,8 @@
                 </span>
 
                 <span class="complaint-action">
-                    <form id="sendComplaint" action="./email">
+                    <form id="sendComplaint" action="{{ url_for('emailPage') }}" method="GET">
+                        <input type="hidden" name="userEmail" value="{{ email }}">
                         <button id="complaintbtn" name="action" type="submit" value="complaint">Send Complaint</button>
                     </form>
                 </span>

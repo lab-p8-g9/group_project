@@ -26,7 +26,8 @@
             <h1>Please Input your Issue below:</h1>
         </div>
 
-        <form action="./submitComplaint" method="POST">
+        <form action="{{ url_for('submit', userEmail=email) }}" method="POST">
+            <input type="hidden" name="userEmail" value="{{ email }}">
 
             <div class="email-field">
                 <label for="subject">Subject:</label>

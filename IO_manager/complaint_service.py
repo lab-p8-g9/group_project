@@ -30,5 +30,5 @@ class ComplaintService(ComplaintUseCase):
     def resolve_complaint(self, complaint_id: Any) -> bool:
         return self._complaint_gateway.resolve_complaint(complaint_id)
 
-    def analyze_complaint(self, subject: str, complaint: str) -> List[Any]:
-        return self._analyzer.analyze(subject, complaint)
+    def analyze_complaint(self, email: str, subject: str, complaint: str) -> List[Any]:
+        return self._analyzer.analyze(email, subject, complaint)

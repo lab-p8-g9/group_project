@@ -82,8 +82,8 @@ class FakeComplaintAnalyzer(ComplaintAnalyzer):
     def __init__(self):
         self.arguments = None
 
-    def analyze(self, subject, complaint):
-        self.arguments = (subject, complaint)
+    def analyze(self, email, subject, complaint):
+        self.arguments = (email, subject, complaint)
         return ["General Inquiry", 4, "Valid complaint", "Admin"]
 
 
@@ -190,10 +190,17 @@ class ComplaintServiceTests(unittest.TestCase):
         self.assertEqual(self.gateway.resolved_ids, ["17"])
 
     def test_analysis_delegates_to_analyzer(self):
-        result = self.service.analyze_complaint("Subject", "Complaint text")
+        result = self.service.analyze_complaint(
+            "customer@example.com",
+            "Subject",
+            "Complaint text",
+        )
 
         self.assertEqual(result[1], 4)
-        self.assertEqual(self.analyzer.arguments, ("Subject", "Complaint text"))
+        self.assertEqual(
+            self.analyzer.arguments,
+            ("customer@example.com", "Subject", "Complaint text"),
+        )
 
     def test_loads_customer_complaints(self):
         complaints = self.service.customer_complaints("customer@example.com")
@@ -205,6 +212,36 @@ class ComplaintServiceTests(unittest.TestCase):
 
 
 class ComplaintSubmissionTests(unittest.TestCase):
+    def test_passes_logged_in_email_to_complaint_analysis(self):
+        app = Flask(__name__)
+        complaint_service = Mock()
+        complaint_service.analyze_complaint.return_value = ["General Inquiry", 4]
+        controller = IOManager(
+            app,
+            None,
+            complaint_service,
+            None,
+            ActivitySummary(),
+        )
+        email = "customer@example.com"
+
+        with app.test_request_context(
+            "/submitComplaint",
+            method="POST",
+            data={
+                "userEmail": email,
+                "subject": "Subject",
+                "user_complaint": "Complaint",
+            },
+        ):
+            controller.submit()
+
+        complaint_service.analyze_complaint.assert_called_once_with(
+            email,
+            "Subject",
+            "Complaint",
+        )
+
     def submit_with_error(self, error):
         app = Flask(__name__)
         activity_summary = ActivitySummary()
@@ -248,12 +285,17 @@ class OpenRouterAnalyzerTests(unittest.TestCase):
         ) as manager_class:
             manager_class.return_value.analyse_complaint.return_value = expected
 
-            result = OpenRouterComplaintAnalyzer().analyze("Subject", "Complaint")
+            result = OpenRouterComplaintAnalyzer().analyze(
+                "customer@example.com",
+                "Subject",
+                "Complaint",
+            )
 
-        manager_class.return_value.analyse_complaint.assert_called_once_with(
-            "Subject",
-            "Complaint",
-        )
+            manager_class.return_value.analyse_complaint.assert_called_once_with(
+                "customer@example.com",
+                "Subject",
+                "Complaint",
+            )
         self.assertEqual(result, expected)
 
 

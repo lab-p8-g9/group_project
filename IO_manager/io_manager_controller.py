@@ -72,7 +72,7 @@ class IOManager:
         return render_template('account.html')
 
     def emailPage(self):
-        return render_template('email.html')
+        return render_template('email.html', email=request.args.get('userEmail'))
 
     def employeeLoginPage(self):
         return render_template('employee.html')
@@ -218,12 +218,14 @@ class IOManager:
         return jsonify(status="Resolved")
 
     def submit(self):
+        email = request.form.get('userEmail') or request.args.get('userEmail')
         subject = request.form.get('subject')
         user_complaint = request.form.get('user_complaint')
+        print(email)
         self.summary("Update", "User has entered, his complaint")
         print("analyzing complaint")
         try:
-            result = self.complaint_service.analyze_complaint(subject, user_complaint)
+            result = self.complaint_service.analyze_complaint(email, subject, user_complaint)
             print("analyze done")
             if 0 < result[1] < 9:
                 self.summary(

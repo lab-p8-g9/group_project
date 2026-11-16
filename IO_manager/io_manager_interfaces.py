@@ -68,11 +68,11 @@ class ComplaintUseCase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def analyze_complaint(self, subject: str, complaint: str) -> List[Any]:
+    def analyze_complaint(self, email: str, subject: str, complaint: str) -> List[Any]:
         raise NotImplementedError
 
 
 class ComplaintAnalyzer(ABC):
     @abstractmethod
-    def analyze(self, subject: str, complaint: str) -> List[Any]:
+    def analyze(self, email: str, subject: str, complaint: str) -> List[Any]:
         raise NotImplementedError
