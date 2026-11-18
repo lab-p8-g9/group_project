@@ -1,3 +1,5 @@
+# Complaint analyzer adapter for the OpenRouter AI manager.
+
 from typing import Any, List
 
 from AI_manager.openrouter_ai_manager import OpenRouterAIManager
@@ -6,5 +8,8 @@ from IO_manager.io_manager_interfaces import ComplaintAnalyzer
 
 
 class OpenRouterComplaintAnalyzer(ComplaintAnalyzer):
+    # Delegate complaint analysis to the OpenRouter AI implementation.
+
     def analyze(self, email: str, subject: str, complaint: str) -> List[Any]:
+        # Send complaint details to OpenRouter and return the analysis result.
         return OpenRouterAIManager().analyse_complaint(email, subject, complaint)

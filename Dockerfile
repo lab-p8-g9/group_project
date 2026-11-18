@@ -1,15 +1,14 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY logic_manager.py .
-COPY data_manager.py .
-COPY ai_manager.py .
-COPY io_manager.py .
-COPY main.py .
-COPY complaint.db .
-COPY complaint.json .
+COPY ./Logic_manager ./Logic_manager
+COPY ./Data_manager ./Data_manager
+COPY ./AI_manager ./AI_manager
+COPY ./IO_manager ./IO_manager
 
-RUN pip install --no-cache-dir pygarble python-dotenv openai
+RUN pip install --no-cache-dir pygarble python-dotenv openai flask
 
-CMD ["python", "main.py"]
+EXPOSE 8080
+
+CMD ["python", "IO_manager/io_manager.py"]
