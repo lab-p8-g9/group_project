@@ -7,4 +7,7 @@ change app.run(host="127.0.0.1" to just "0.0.0.0 in order for it to run.
 The relevant test files for each managers in inside each managers' files with the filename containing
 test in it.
 
-use - docker run --rm -p 8080:8080 --env-file .env inf1103_project_part2 python -m IO_manager.io_manager - to run the system on decker.
+For main program: docker run --rm -p 8080:8080 --env-file .env inf1103_project_part2 python -m IO_manager.io_manager 
+
+For automnated test script: docker run --rm inf1103_project_part2 python Logic_manager/logic_test_script
+
