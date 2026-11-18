@@ -1,3 +1,5 @@
+# Flask routes and request handling for the IO manager application.
+
 import json
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
@@ -10,6 +12,8 @@ from IO_manager.io_manager_interfaces import AuthenticationUseCase, ComplaintUse
 
 
 class IOManager:
+    # Own the Flask routes, credentials, services, and activity summary.
+
     def __init__(
         self,
         app: Flask,
@@ -26,6 +30,7 @@ class IOManager:
         self.log = activity_summary.log
 
     def register_routes(self):
+        # Register the application's page and form routes with Flask.
         routes = (
             ("/", "home", self.home, ["GET"]),
             ("/email", "emailPage", self.emailPage, ["GET"]),

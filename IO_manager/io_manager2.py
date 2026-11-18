@@ -1,4 +1,6 @@
-#import external functions from the data_manger and ai_manager
+# Legacy console implementation for the complaint system.
+
+# Import external functions from the data_manager and AI manager.
 from Data_manager.data_manager import save_to_SQL, load_from_SQL, load_from_JSON
 from AI_manager.ai_manager import analyse_complaint, process_and_save_complaint
 

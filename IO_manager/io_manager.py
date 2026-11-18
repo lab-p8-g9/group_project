@@ -1,3 +1,5 @@
+# Application bootstrap module for the Flask IO manager.
+
 from flask import Flask
 
 from IO_manager.account_gateway import DataManagerAccountGateway
@@ -11,6 +13,7 @@ from IO_manager.openrouter_complaint_analyzer import OpenRouterComplaintAnalyzer
 
 
 app = Flask(__name__)
+# Create the shared services and compose them into the controller.
 activity_summary = ActivitySummary()
 credential_validator = CredentialValidator()
 authentication_service = AuthenticationService(DataManagerAccountGateway())

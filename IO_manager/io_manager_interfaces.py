@@ -1,3 +1,5 @@
+# Abstract interfaces between IO manager services and external implementations.
+
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional
 
@@ -5,6 +7,8 @@ from Data_manager.accounts import Account
 
 
 class AccountGateway(ABC):
+    # Contract for constructing customer and employee account objects.
+
     @abstractmethod
     def customer_account(self, email: str, password: str) -> Account:
         raise NotImplementedError
@@ -15,6 +19,8 @@ class AccountGateway(ABC):
 
 
 class AuthenticationUseCase(ABC):
+    # Contract for account creation and customer or employee authentication.
+
     @abstractmethod
     def create_customer_account(self, email: str, password: str):
         raise NotImplementedError
@@ -29,6 +35,8 @@ class AuthenticationUseCase(ABC):
 
 
 class ComplaintGateway(ABC):
+    # Contract for data access operations involving complaints.
+
     @abstractmethod
     def customer_complaints(self, email: str) -> List[Any]:
         raise NotImplementedError
@@ -51,6 +59,8 @@ class ComplaintGateway(ABC):
 
 
 class ComplaintUseCase(ABC):
+    # Contract for complaint actions exposed by the IO manager.
+
     @abstractmethod
     def customer_complaints(self, email: str) -> List[Any]:
         raise NotImplementedError
@@ -73,6 +83,8 @@ class ComplaintUseCase(ABC):
 
 
 class ComplaintAnalyzer(ABC):
+    # Contract for services that classify and prioritize complaints.
+
     @abstractmethod
     def analyze(self, email: str, subject: str, complaint: str) -> List[Any]:
         raise NotImplementedError
