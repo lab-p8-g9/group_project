@@ -14,6 +14,7 @@ from IO_manager.activity_summary import ActivitySummary
 from IO_manager.authentication_service import AuthenticationService
 from IO_manager.complaint_service import ComplaintService
 from IO_manager.credential_validator import CredentialValidator
+from IO_manager.data_manager_complaint_gateway import DataManagerComplaintGateway
 from IO_manager.io_manager_controller import IOManager
 from IO_manager.io_manager_interfaces import (
     AccountGateway,
@@ -186,6 +187,45 @@ class ComplaintServiceTests(unittest.TestCase):
             [complaint[8] for complaint in complaints],
             ["Unresolved", "Resolved"],
         )
+
+    def test_combines_recalculated_unresolved_and_resolved(self):
+        unresolved = [
+            (1, "customer@example.com", "General", "Open complaint",
+             "2024-01-01 00:00:00", "", 3, 3, "Unresolved")
+        ]
+        refreshed_unresolved = [
+            (1, "customer@example.com", "General", "Open complaint",
+             "2024-01-01 00:00:00", "", 3, 6, "Unresolved")
+        ]
+        resolved = [
+            (2, "customer@example.com", "Billing", "Closed complaint",
+             "", "", 2, 2, "Resolved")
+        ]
+        expected = refreshed_unresolved.copy() + resolved
+        service = ComplaintService(
+            DataManagerComplaintGateway(),
+            self.analyzer,
+        )
+
+        with (
+            patch(
+                "Logic_manager.logic_recalculate_score.load_all_unresolved",
+                side_effect=[unresolved, refreshed_unresolved],
+            ),
+            patch("Logic_manager.logic_recalculate_score.update_complaint_score"),
+            patch(
+                "Logic_manager.logic_recalculate_score.Logic_Deadline_Classification"
+            ) as classification,
+            patch(
+                "IO_manager.data_manager_complaint_gateway.load_all_resolved",
+                return_value=resolved,
+            ),
+        ):
+            classification.return_value.classification.return_value = (6, None)
+
+            complaints = service.all_employee_complaints("Admin")
+
+        self.assertEqual(complaints, expected)
 
     def test_resolve_delegates_to_gateway(self):
         self.assertTrue(self.service.resolve_complaint("17"))

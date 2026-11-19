@@ -6,7 +6,7 @@ class recalculate_logic_score:
     def __init__(self, department:str):
         self.__department = department
 
-    def update_all_score(self):
+    def update_all_score(self) -> list[tuple]:
 
         complaint = load_all_unresolved(self.__department)
 
@@ -19,4 +19,5 @@ class recalculate_logic_score:
             rows = Logic_Deadline_Classification(priority_score, current_datetime)
             new_priority_score, deadline  = rows.classification()
             update_complaint_score(self.__department, id, new_priority_score)
-        
+
+        return load_all_unresolved(self.__department)
