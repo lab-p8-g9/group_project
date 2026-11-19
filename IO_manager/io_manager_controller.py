@@ -223,13 +223,16 @@ class IOManager:
         return jsonify(status="Resolved")
 
     def submit(self):
-        email = request.form.get('userEmail') or request.args.get('userEmail')
+        email = request.args.get('userEmail')
         subject = request.form.get('subject')
         user_complaint = request.form.get('user_complaint')
         print(email)
         self.summary("Update", "User has entered, his complaint")
         print("analyzing complaint")
         try:
+            if not email:
+                raise TypeError("Email is required to submit a complaint.")
+
             result = self.complaint_service.analyze_complaint(email, subject, user_complaint)
             print("analyze done")
             if 0 < result[1] < 9:

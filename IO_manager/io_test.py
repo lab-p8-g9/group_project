@@ -268,10 +268,9 @@ class ComplaintSubmissionTests(unittest.TestCase):
         email = "customer@example.com"
 
         with app.test_request_context(
-            "/submitComplaint",
+            "/submitComplaint?userEmail=customer@example.com",
             method="POST",
             data={
-                "userEmail": email,
                 "subject": "Subject",
                 "user_complaint": "Complaint",
             },
@@ -282,6 +281,32 @@ class ComplaintSubmissionTests(unittest.TestCase):
             email,
             "Subject",
             "Complaint",
+        )
+
+    def test_missing_email_is_rejected_before_complaint_analysis(self):
+        app = Flask(__name__)
+        activity_summary = ActivitySummary()
+        complaint_service = Mock()
+        controller = IOManager(
+            app,
+            None,
+            complaint_service,
+            None,
+            activity_summary,
+        )
+
+        with app.test_request_context(
+            "/submitComplaint",
+            method="POST",
+            data={"subject": "Subject", "user_complaint": "Complaint"},
+        ):
+            response = controller.submit()
+
+        self.assertIn("Missing Email, please login first", response)
+        complaint_service.analyze_complaint.assert_not_called()
+        self.assertIn(
+            "User tried to send complaint without logging in",
+            activity_summary.log,
         )
 
     def submit_with_error(self, error):
@@ -298,7 +323,7 @@ class ComplaintSubmissionTests(unittest.TestCase):
         )
 
         with app.test_request_context(
-            "/submitComplaint",
+            "/submitComplaint?userEmail=customer@example.com",
             method="POST",
             data={"subject": "Subject", "user_complaint": "Complaint"},
         ):
