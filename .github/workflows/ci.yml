@@ -17,8 +17,17 @@ jobs:
       - name: Build Docker image
         run: docker build -t inf1103_project_part2 .
 
-      - name: Run Logic Deadline Tests
-        run: docker run --rm inf1103_project_part2 python Logic_manager/logic_test_script
+      - name: Run IO Manager Unit Tests
+        run: docker run --rm inf1103_project_part2 python -m unittest IO_manager/io_test.py
 
-      - name: Run Offline AI Logic Tests
-        run: docker run --rm inf1103_project_part2 python Logic_manager/valid_sample_script.py
+      - name: Run Logic Deadline Tests
+        run: docker run --rm inf1103_project_part2 python Logic_manager/logic_test_script.py
+
+      - name: Run Logic Valid AI Sample Tests
+        run: docker run --rm inf1103_project_part2 python -m Logic_manager.valid_sample_script
+
+      - name: Run Logic Invalid AI Sample Tests
+        run: docker run --rm inf1103_project_part2 python -m Logic_manager.invalid_sample_script
+
+      - name: Run Offline AI Manager Test
+        run: docker run --rm inf1103_project_part2 python -c "from AI_manager.ai_test import test_offline_ai; test_offline_ai()"
