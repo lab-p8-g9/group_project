@@ -14,7 +14,6 @@ For main program: docker run --rm -p 8080:8080 --env-file .env inf1103_project_p
 For automated test script: 
 
 docker run --rm inf1103_project_part2 python -m unittest IO_manager/io_test.py
-
 docker run --rm inf1103_project_part2 python Logic_manager/logic_test_script.py
 
 docker run --rm inf1103_project_part2 python -m Logic_manager.valid_sample_script
