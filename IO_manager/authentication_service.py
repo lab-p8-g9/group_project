@@ -18,12 +18,12 @@ class AuthenticationService(AuthenticationUseCase):
         return account.get_account()
 
     def customer_account(self, email: str, password: str):
-        # Retrieve customer account data for login.
-        return self._account_gateway.customer_account(email, password).get_account()
+        # Retrieve customer account data only when both credentials match.
+        return self._account_gateway.customer_account(email, password).authenticate()
 
     def employee_account(self, email: str, password: str):
         # Retrieve employee account data only for a recognized domain.
         account = self._account_gateway.employee_account(email, password)
         if account is None:
             return None
-        return account.get_account()
+        return account.authenticate()

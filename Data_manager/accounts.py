@@ -66,6 +66,14 @@ class Account(ABC):
             return None
         return data  
 
-    
-        
+    def authenticate(self) -> tuple[str, str, str] | None:
+        c.execute(
+            """
+            SELECT *
+            FROM Accounts
+            WHERE Address = ? AND Password = ?
+            """,
+            (self.address, self._pw),
+        )
+        return c.fetchone()
 

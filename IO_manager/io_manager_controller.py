@@ -161,7 +161,7 @@ class IOManager:
                     password,
                 )
                 if userData is None:
-                    return self.alertBox("User does not exist")
+                    return self.alertBox("Incorrect email or password")
                 return redirect(
                     url_for(
                         'customerPage',
@@ -190,12 +190,8 @@ class IOManager:
                 user_email,
                 password,
             )
-            print(
-                self.authentication_service.employee_account(
-                    user_email,
-                    password,
-                )
-            )
+            if userData is None:
+                return self.alertBox("Incorrect email or password")
             print("Login Successful")
             print("Redirecting to Employee Homepage")
             destination = url_for(

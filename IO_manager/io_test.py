@@ -3,12 +3,14 @@
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
+import sqlite3
 from unittest.mock import Mock, patch
 
 from flask import Flask
 
 from AI_manager.ai_connection_error import AIConnectionError
 from AI_manager.schema_validation_error import SchemaValidationError
+from Data_manager.customer_accounts import CustomerA
 from IO_manager.account_gateway import DataManagerAccountGateway
 from IO_manager.activity_summary import ActivitySummary
 from IO_manager.authentication_service import AuthenticationService
@@ -34,6 +36,9 @@ class FakeAccount:
         return True
 
     def get_account(self):
+        return self.account_data
+
+    def authenticate(self):
         return self.account_data
 
 
@@ -142,6 +147,32 @@ class AuthenticationServiceTests(unittest.TestCase):
         service = AuthenticationService(FakeAccountGateway())
 
         self.assertIsNone(service.employee_account("person@example.com", "StrongPassword1!"))
+
+
+class AccountAuthenticationTests(unittest.TestCase):
+    def test_authenticate_requires_matching_email_and_password(self):
+        connection = sqlite3.connect(":memory:")
+        try:
+            cursor = connection.cursor()
+            cursor.execute(
+                "CREATE TABLE Accounts (Address TEXT, Password TEXT, Role TEXT)"
+            )
+            cursor.execute(
+                "INSERT INTO Accounts VALUES (?, ?, ?)",
+                ("person@example.com", "CorrectPassword1!", "Customer"),
+            )
+
+            with patch("Data_manager.accounts.c", cursor):
+                account = CustomerA("person@example.com", "CorrectPassword1!")
+                wrong_password = CustomerA("person@example.com", "WrongPassword1!")
+
+                self.assertEqual(
+                    account.authenticate(),
+                    ("person@example.com", "CorrectPassword1!", "Customer"),
+                )
+                self.assertIsNone(wrong_password.authenticate())
+        finally:
+            connection.close()
 
 
 class AccountGatewayTests(unittest.TestCase):
