@@ -1,0 +1,24 @@
+name: Docker CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t inf1103_project_part2 .
+
+      - name: Run Logic Deadline Tests
+        run: docker run --rm inf1103_project_part2 python Logic_manager/logic_test_script
+
+      - name: Run Offline AI Logic Tests
+        run: docker run --rm inf1103_project_part2 python Logic_manager/valid_sample_script.py
