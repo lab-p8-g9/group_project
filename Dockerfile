@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir pygarble python-dotenv openai flask
 
 EXPOSE 8080
 
-CMD ["python", "IO_manager/io_manager.py"]
+CMD ["flask", "--app", "IO_manager.io_manager", "run", "--host=0.0.0.0", "--port=8080"]
